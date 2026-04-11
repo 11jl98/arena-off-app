@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap"
+      rel="stylesheet"
+    />
+
+    <meta name="theme-color" content="#F8F9FA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="Arena Off Beach - Reserve seu horário" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Arena Off Beach" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/logo.jpg" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512x512.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Arena Off Beach</title>
+
+    <style>
+      :root {
+        --bg-light: hsl(210, 17%, 98%);
+        --bg-dark: hsl(0, 0%, 8%);
+      }
+      html {
+        background-color: var(--bg-dark);
+      }
+      html.light {
+        background-color: var(--bg-light);
+      }
+      body {
+        margin: 0;
+        background-color: transparent;
+      }
+      /* Splash screen inline para evitar FOUC */
+      #splash-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(180deg, #FF8424 0%, #FF5722 100%);
+        z-index: 9999;
+        transition: opacity 0.3s ease-out;
+      }
+      #splash-loader.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash-loader img {
+        width: 120px;
+        height: 120px;
+        border-radius: 24px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+    </style>
+
+    <script>
+      (function () {
+        const savedTheme = localStorage.getItem('app-theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme =
+          savedTheme === 'system' || !savedTheme ? (systemDark ? 'dark' : 'light') : savedTheme;
+        document.documentElement.classList.add(theme);
+      })();
+    </script>
+    <script>
+      (function () {
+        function setVh() {
+          var vh =
+            (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
+          document.documentElement.style.setProperty('--vh', vh + 'px');
+        }
+        setVh();
+        window.addEventListener('resize', setVh);
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', setVh);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <!-- Splash inline para evitar FOUC -->
+    <div id="splash-loader">
+      <img src="/logo.jpg" alt="Arena Off Beach" />
+    </div>
+    
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <script>
+      // Remove splash quando React carregar
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          const splash = document.getElementById('splash-loader');
+          if (splash) splash.classList.add('hide');
+          setTimeout(() => splash && splash.remove(), 300);
+        }, 500);
+      });
+    </script>
+  </body>
+</html>
