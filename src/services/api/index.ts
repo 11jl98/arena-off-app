@@ -177,7 +177,7 @@ class HttpClient {
       }
     }
 
-    // Renovação proativa: só em rotas autenticadas com sessão ativa
+
     if (
       !_retry &&
       !_skipProactiveRefresh &&

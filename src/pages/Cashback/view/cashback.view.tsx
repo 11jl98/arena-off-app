@@ -32,7 +32,6 @@ export const CashbackView: React.FC = () => {
   return (
     <>
       <div className="flex flex-col min-h-full">
-        {/* Header */}
         <div className="bg-gradient-to-r from-primary to-orange-600 px-4 pt-12 pb-20">
           <h1 className="text-2xl font-bold text-white">Cashback</h1>
           <p className="text-white/80 text-sm mt-0.5">
@@ -40,12 +39,10 @@ export const CashbackView: React.FC = () => {
           </p>
         </div>
 
-        {/* Wallet card overlapping header */}
         <div className="px-4 -mt-14 mb-4">
           <WalletCard wallet={wallet} loading={loadingWallet} />
         </div>
 
-        {/* Scan button */}
         <div className="px-4 mb-6">
           <button
             onClick={() => setScannerOpen(true)}
@@ -56,7 +53,6 @@ export const CashbackView: React.FC = () => {
           </button>
         </div>
 
-        {/* Transactions */}
         <div className="flex-1 px-4">
           <h2 className="font-bold text-foreground mb-3">Histórico de cashback</h2>
 

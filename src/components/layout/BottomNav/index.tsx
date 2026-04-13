@@ -50,7 +50,6 @@ export const BottomNav: React.FC = () => {
           </NavLink>
         ))}
       </div>
-      {/* iOS safe area pad */}
       <div className="h-safe-area-inset-bottom bg-background" />
     </nav>
   );

@@ -16,9 +16,9 @@ export interface Booking {
   courtId: string;
   court?: Court;
   clientId: string;
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:mm
-  endTime: string; // HH:mm
+  date: string;
+  startTime: string;
+  endTime: string;
   calculatedAmount: number;
   cashbackUsed: number;
   finalAmount: number;
@@ -30,18 +30,18 @@ export interface Booking {
 }
 
 export interface AvailableSlot {
-  startTime: string; // HH:mm
-  endTime: string; // HH:mm
+  startTime: string;
+  endTime: string;
   available: boolean;
 }
 
 export interface CreateBookingPayload {
   courtId: string;
   clientId: string;
-  sportId: string; // required per backend
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:mm
-  endTime: string; // HH:mm
+  sportId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
   promotionId?: string;
   cashbackUsed?: number;
   paymentMethod?: PaymentMethod;
@@ -50,7 +50,7 @@ export interface CreateBookingPayload {
 
 export interface AvailableSlotsParams {
   courtId: string;
-  date: string; // YYYY-MM-DD
+  date: string;
 }
 
 export interface CheckAvailabilityPayload {

@@ -71,23 +71,19 @@ export const PaymentReturnPage: React.FC = () => {
 
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-6 gap-8 animate-fade-in">
-      {/* Icon */}
       <div className={cn('w-24 h-24 rounded-full flex items-center justify-center', config.bgClass)}>
         <Icon size={52} className={config.iconClass} />
       </div>
 
-      {/* Text */}
       <div className="text-center flex flex-col gap-2">
         <h1 className="text-2xl font-bold text-foreground">{config.title}</h1>
         <p className="text-muted-foreground text-sm max-w-xs">{config.message}</p>
       </div>
 
-      {/* Auto-redirect notice */}
       <p className="text-xs text-muted-foreground/60 text-center">
         Redirecionando para suas reservas...
       </p>
 
-      {/* Manual back button */}
       <button
         onClick={() => navigate(ROUTES.RESERVAS, { replace: true })}
         className="px-8 py-3 bg-primary text-primary-foreground rounded-2xl font-semibold text-sm active:scale-[0.98] transition-transform"

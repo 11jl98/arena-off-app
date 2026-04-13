@@ -16,7 +16,6 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court, onSelect, className
         className
       )}
     >
-      {/* Header accent */}
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border px-4 py-3.5 flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-foreground text-base leading-tight truncate">

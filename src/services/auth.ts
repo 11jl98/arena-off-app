@@ -109,13 +109,11 @@ export const AuthService = {
 
   async signOut(): Promise<void> {
     try {
-      // Sign out from Firebase
       await auth.signOut();
     } catch (error) {
       console.error('Firebase signOut error:', error);
     }
     
-    // Sign out from backend
     await httpClient.post('/auth/logout', {});
   },
 

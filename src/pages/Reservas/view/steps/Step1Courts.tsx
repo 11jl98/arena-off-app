@@ -22,7 +22,6 @@ export const Step1Courts: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search */}
       <div className="relative">
         <Search
           size={16}
@@ -37,7 +36,6 @@ export const Step1Courts: React.FC = () => {
         />
       </div>
 
-      {/* Courts list */}
       {isLoading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="animate-spin text-primary" size={28} />

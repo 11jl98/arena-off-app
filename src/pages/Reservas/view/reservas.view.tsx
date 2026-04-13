@@ -22,7 +22,6 @@ const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory 
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Header row */}
       <div className="flex items-center gap-3">
         {showBackButton ? (
           <button
@@ -45,7 +44,6 @@ const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory 
         )}
       </div>
 
-      {/* Progress bar */}
       {showProgress && (
         <div className="flex gap-1.5">
           {[1, 2, 3].map((s) => (
@@ -60,7 +58,6 @@ const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory 
         </div>
       )}
 
-      {/* Steps */}
       {step === 1 && <Step1Courts />}
       {step === 2 && <Step2DateTime />}
       {step === 3 && <Step3Checkout />}
@@ -69,7 +66,6 @@ const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory 
   );
 };
 
-// ---- History tab ----
 const HistoryTab: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const currentUser = useUserStore((s) => s.user);
@@ -80,7 +76,6 @@ const HistoryTab: React.FC = () => {
     staleTime: 60 * 1000,
   });
 
-  // Defesa client-side: exibir apenas reservas do usuário autenticado
   const bookings = (data ?? []).filter(
     (b) => !currentUser || b.clientId === currentUser.id
   );
@@ -123,7 +118,6 @@ const HistoryTab: React.FC = () => {
   );
 };
 
-// ---- Main view ----
 type ActiveTab = 'nova' | 'historico';
 
 export const ReservasView: React.FC = () => {
@@ -131,13 +125,11 @@ export const ReservasView: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Page header */}
-      <div className="bg-gradient-to-r from-primary to-orange-600 px-4 pt-12 pb-6">
+      <div className="bg-linear-to-r from-primary to-orange-600 px-4 pt-12 pb-6">
         <h1 className="text-2xl font-bold text-white">Reservas</h1>
         <p className="text-white/80 text-sm mt-0.5">Agende quadras e veja seu histórico</p>
       </div>
 
-      {/* Tab switcher */}
       <div className="px-4 -mt-3 mb-4">
         <div className="bg-card border border-border rounded-2xl p-1 flex shadow-sm">
           <button
@@ -167,7 +159,6 @@ export const ReservasView: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 px-4 pb-4">
         {activeTab === 'nova' ? (
           <BookingFlowProvider>

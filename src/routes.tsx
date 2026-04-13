@@ -59,13 +59,11 @@ export const AppRoutes: React.FC = () => {
   return (
     <React.Suspense fallback={<SplashScreen />}>
       <Routes>
-        {/* Public routes */}
         <Route element={<PublicLayout />}>
           <Route path={ROUTES.LANDING} element={<LandingPage />} />
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
         </Route>
 
-        {/* Protected app routes */}
         <Route element={<AuthGuard />}>
           <Route element={<AppLayout />}>
             <Route path={ROUTES.RESERVAS} element={<ReservasPage />} />

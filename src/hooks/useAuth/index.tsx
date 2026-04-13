@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback } from 'react';
 import { useAuthStore, useUserStore } from '@/store';
 import { AuthService } from '@/services/auth.ts';

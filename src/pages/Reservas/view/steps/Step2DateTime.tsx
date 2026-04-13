@@ -31,7 +31,6 @@ function handleSlotClick(
   const startIdx = allSlots.findIndex((s) => s.startTime === selectedSlots[0].startTime);
   const clickedIdx = allSlots.findIndex((s) => s.startTime === slot.startTime);
 
-  // Clicking the already-first slot resets
   if (clickedIdx === startIdx) {
     setSelectedSlots([slot]);
     return;
@@ -75,7 +74,6 @@ export const Step2DateTime: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Date strip */}
       <div>
         <p className="text-sm font-semibold text-foreground mb-3">Escolha a data</p>
         <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-2">
@@ -87,7 +85,7 @@ export const Step2DateTime: React.FC = () => {
                 key={day.toISOString()}
                 onClick={() => selectDate(day)}
                 className={cn(
-                  'shrink-0 flex flex-col items-center justify-center w-[3.5rem] py-2.5 rounded-2xl border transition-all duration-150 active:scale-95',
+                  'shrink-0 flex flex-col items-center justify-center w-14 py-2.5 rounded-2xl border transition-all duration-150 active:scale-95',
                   isSelected
                     ? 'bg-primary border-primary text-primary-foreground shadow-md'
                     : 'bg-card border-border text-foreground'
@@ -124,7 +122,6 @@ export const Step2DateTime: React.FC = () => {
         </div>
       </div>
 
-      {/* Selection banner */}
       {selectedSlots.length > 0 && lastSlot && (
         <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3.5 py-2.5">
           <Clock size={14} className="text-primary shrink-0" />
@@ -143,7 +140,6 @@ export const Step2DateTime: React.FC = () => {
         </div>
       )}
 
-      {/* Time slots */}
       {selectedDate && (
         <div className="flex flex-col gap-4">
           <div className="flex items-baseline gap-1.5">

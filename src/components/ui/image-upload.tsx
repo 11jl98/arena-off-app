@@ -2,7 +2,6 @@ import { Camera, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ImageCropper: React.FC<any> = () => null;
 type ImageType = 'PROFILE' | 'BANNER';
 

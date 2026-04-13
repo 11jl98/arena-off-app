@@ -72,10 +72,8 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
 
   const isCancellableByTime = (() => {
     if (!booking) return false;
-    // Constrói a data/hora como local (sem conversão de timezone)
-    const dateOnly = booking.date.substring(0, 10); // "YYYY-MM-DD"
+    const dateOnly = booking.date.substring(0, 10);
     const bookingStart = new Date(`${dateOnly}T${booking.startTime}:00`);
-    // Permite cancelar apenas se faltam mais de 2 horas para o início
     return isBefore(addHours(new Date(), 2), bookingStart);
   })();
 
@@ -102,7 +100,6 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
 
           {booking && (
             <>
-              {/* Court info */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2">
                   <MapPin size={16} className="text-primary mt-0.5 shrink-0" />
@@ -116,7 +113,6 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                 <BookingStatusBadge status={booking.status} />
               </div>
 
-              {/* Details grid */}
               <div className="bg-muted/50 rounded-2xl p-4 grid grid-cols-2 gap-4 text-sm">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -157,7 +153,6 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                 </div>
               </div>
 
-              {/* Price breakdown */}
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-2 text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Valor calculado</span>
@@ -175,7 +170,6 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                 </div>
               </div>
 
-              {/* Cancel */}
               {canCancel && (
                 <div className="pt-2">
                   {confirmCancel ? (
@@ -216,7 +210,6 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                 </div>
               )}
 
-              {/* Aviso: prazo de cancelamento expirado */}
               {isCancellableStatus && !isCancellableByTime && (
                 <div className="pt-2">
                   <div className="flex items-start gap-2 bg-muted/60 border border-border rounded-2xl p-4">

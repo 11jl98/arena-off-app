@@ -31,7 +31,7 @@ registerRoute(
   ({ url }) =>
     url.pathname.startsWith('/api/') &&
     !url.pathname.includes('schedule') &&
-    !url.pathname.includes('/auth'), // 👈 AQUI
+    !url.pathname.includes('/auth'),
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [

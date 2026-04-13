@@ -21,7 +21,6 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
 
   return (
     <div className="flex flex-col items-center gap-6 py-4 animate-fade-in">
-      {/* Success icon */}
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
           <CheckCircle2 size={44} className="text-green-600 dark:text-green-400" />
@@ -32,7 +31,6 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         </p>
       </div>
 
-      {/* Booking detail card */}
       <div className="w-full bg-card border border-border rounded-2xl p-5 flex flex-col gap-3">
         <div className="flex items-center gap-2 pb-3 border-b border-border">
           <MapPin size={15} className="text-primary shrink-0" />
@@ -92,7 +90,6 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         )}
       </div>
 
-      {/* Actions */}
       <div className="w-full flex flex-col gap-3">
         <button
           onClick={reset}

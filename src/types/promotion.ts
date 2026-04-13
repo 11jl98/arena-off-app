@@ -9,9 +9,9 @@ export interface Promotion {
   name: string;
   type: PromotionType;
   discountPercent?: number;
-  startTime?: string; // HH:mm
-  endTime?: string; // HH:mm
-  daysOfWeek?: number[]; // 0=Sun…6=Sat
+  startTime?: string;
+  endTime?: string;
+  daysOfWeek?: number[];
   minHours?: number;
   bonusHours?: number;
   validFrom?: string;
@@ -32,18 +32,18 @@ export interface HoursPackage {
 }
 
 export interface CheckAllPromotionParams {
-  date: string;        // YYYY-MM-DD
-  startTime: string;   // HH:mm
-  endTime: string;     // HH:mm
-  basePrice: number;   // valor em reais
+  date: string;
+  startTime: string;
+  endTime: string;
+  basePrice: number;
   hours: number;
   clientId: string;
 }
 
 export interface AppliedPromotion {
   promotion: Promotion;
-  originalPrice: number;   // reais
-  discountAmount: number;  // reais
-  finalPrice: number;      // reais
+  originalPrice: number;
+  discountAmount: number;
+  finalPrice: number;
   extraHours?: number | null;
 }

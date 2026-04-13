@@ -47,7 +47,6 @@ export const PerfilView: React.FC = () => {
     defaultValues: { name: user?.name ?? '' },
   });
 
-  // Sync form when user loads
   useEffect(() => {
     if (user?.name) reset({ name: user.name });
   }, [user?.name, reset]);
@@ -69,13 +68,11 @@ export const PerfilView: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Header */}
       <div className="bg-gradient-to-r from-primary to-orange-600 px-4 pt-12 pb-16">
         <h1 className="text-2xl font-bold text-white">Perfil</h1>
         <p className="text-white/80 text-sm mt-0.5">Suas informações pessoais</p>
       </div>
 
-      {/* Avatar */}
       <div className="flex justify-center -mt-12 mb-4">
         <div className="relative">
           {avatarSrc ? (
@@ -94,7 +91,6 @@ export const PerfilView: React.FC = () => {
       </div>
 
       <div className="flex-1 px-4 flex flex-col gap-5 pb-6">
-        {/* Name form */}
         <form
           onSubmit={handleSubmit((v) => saveProfile(v))}
           className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3"
@@ -145,7 +141,6 @@ export const PerfilView: React.FC = () => {
           )}
         </form>
 
-        {/* Theme picker */}
         <div className="bg-card border border-border rounded-2xl p-4">
           <h2 className="font-semibold text-foreground text-sm mb-3">Aparência</h2>
           <div className="grid grid-cols-3 gap-2">
@@ -167,13 +162,11 @@ export const PerfilView: React.FC = () => {
           </div>
         </div>
 
-        {/* App info */}
         <div className="bg-card border border-border rounded-2xl p-4 text-sm text-muted-foreground">
           <p className="font-medium text-foreground mb-1">Arena Off Beach</p>
           <p className="text-xs">Reserve quadras · Ganhe cashback · Aproveite</p>
         </div>
 
-        {/* Logout */}
         <button
           onClick={logout}
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-semibold text-sm active:scale-[0.98] transition-transform"

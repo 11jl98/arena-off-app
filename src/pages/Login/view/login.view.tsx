@@ -25,7 +25,6 @@ export function LoginView() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-linear-to-b from-[#FF8424] to-[#FF5722] px-6">
-      {/* Decorative waves pattern */}
       <div className="absolute inset-0 overflow-hidden opacity-10">
         <svg className="absolute h-full w-full" xmlns="http://www.w3.org/2000/svg">
           <pattern id="waves" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
@@ -38,7 +37,6 @@ export function LoginView() {
 
       <div className="relative z-10 mb-16 text-center">
         <div className="relative mx-auto mb-8 flex h-32 w-32 items-center justify-center">
-          {/* Glow effect */}
           <div className="absolute inset-0 animate-pulse rounded-full bg-white/30 blur-3xl" />
           <img
             src="/logo.jpg"

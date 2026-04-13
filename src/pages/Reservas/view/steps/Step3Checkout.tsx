@@ -30,7 +30,6 @@ import { cn } from '@/lib/utils';
 import type { AppliedPromotion } from '@/types/promotion';
 import type { PaymentMethod } from '@/types/booking';
 
-// Valores das APIs são em REAIS. fmt() não divide por 100.
 const fmt = (reais: number) =>
   reais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -100,12 +99,27 @@ export const Step3Checkout: React.FC = () => {
     staleTime: 60 * 1000,
   });
 
+  const { data: myBookings = [] } = useQuery({
+    queryKey: ['my-bookings'],
+    queryFn: () => BookingsService.listMyBookings({ pageSize: 50 }),
+    enabled: !!currentUser,
+    staleTime: 60 * 1000,
+  });
+
+  const hasExistingBookings = myBookings.some(
+    (b) => b.clientId === currentUser?.id && b.status !== 'CANCELLED'
+  );
+
+  const filteredPromos = availablePromos.filter(
+    (p) => !(p.promotion.type === 'FIRST_BOOKING' && hasExistingBookings)
+  );
+
   const activePromo: AppliedPromotion | null =
     selectedPromoId === ''
       ? null
       : selectedPromoId
-        ? (availablePromos.find((p) => p.promotion.id === selectedPromoId) ?? availablePromos[0] ?? null)
-        : availablePromos[0] ?? null;
+        ? (filteredPromos.find((p) => p.promotion.id === selectedPromoId) ?? filteredPromos[0] ?? null)
+        : filteredPromos[0] ?? null;
 
   const discountAmount = activePromo?.discountAmount ?? 0;
   const priceAfterPromo = activePromo?.finalPrice ?? basePriceReais;
@@ -154,7 +168,6 @@ export const Step3Checkout: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Summary */}
       <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
         <h3 className="font-semibold text-foreground text-sm mb-1">Resumo da reserva</h3>
 
@@ -180,7 +193,6 @@ export const Step3Checkout: React.FC = () => {
         )}
       </div>
 
-      {/* Sport picker */}
       <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
         <h3 className="font-semibold text-sm text-foreground">Qual esporte você vai jogar?</h3>
         <div className="flex flex-wrap gap-2">
@@ -205,7 +217,6 @@ export const Step3Checkout: React.FC = () => {
         )}
       </div>
 
-      {/* Promoções disponíveis */}
       {loadingPromos && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
           <Loader2 size={12} className="animate-spin" />
@@ -213,30 +224,30 @@ export const Step3Checkout: React.FC = () => {
         </div>
       )}
 
-      {!loadingPromos && availablePromos.length === 1 && (
+      {!loadingPromos && filteredPromos.length === 1 && (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 flex items-start gap-3">
           <Gift size={16} className="text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-green-700 dark:text-green-300">
-              {availablePromos[0].promotion.name}
+              {filteredPromos[0].promotion.name}
             </p>
             <p className="text-xs text-green-600 dark:text-green-400">
-              {PROMOTION_TYPE_LABELS[availablePromos[0].promotion.type] ?? availablePromos[0].promotion.type}
-              {availablePromos[0].promotion.discountPercent
-                ? ` · ${availablePromos[0].promotion.discountPercent}% de desconto`
+              {PROMOTION_TYPE_LABELS[filteredPromos[0].promotion.type] ?? filteredPromos[0].promotion.type}
+              {filteredPromos[0].promotion.discountPercent
+                ? ` · ${filteredPromos[0].promotion.discountPercent}% de desconto`
                 : ''}
-              {availablePromos[0].extraHours
-                ? ` · +${availablePromos[0].extraHours}h extra`
+              {filteredPromos[0].extraHours
+                ? ` · +${filteredPromos[0].extraHours}h extra`
                 : ''}
             </p>
           </div>
           <span className="text-xs font-bold text-green-600 dark:text-green-400 shrink-0">
-            -{fmt(availablePromos[0].discountAmount)}
+            -{fmt(filteredPromos[0].discountAmount)}
           </span>
         </div>
       )}
 
-      {!loadingPromos && availablePromos.length > 1 && (
+      {!loadingPromos && filteredPromos.length > 1 && (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowPromoList((v) => !v)}
@@ -254,7 +265,7 @@ export const Step3Checkout: React.FC = () => {
 
           {showPromoList && (
             <div className="border-t border-border flex flex-col divide-y divide-border">
-              {availablePromos.map((p) => {
+              {filteredPromos.map((p) => {
                 const isActive = activePromo?.promotion.id === p.promotion.id;
                 return (
                   <button
@@ -292,7 +303,6 @@ export const Step3Checkout: React.FC = () => {
                 );
               })}
 
-              {/* Opção sem promoção */}
               <button
                 onClick={() => {
                   setSelectedPromoId('');
@@ -322,7 +332,6 @@ export const Step3Checkout: React.FC = () => {
         </div>
       )}
 
-      {/* Price breakdown */}
       <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-2.5">
         <h3 className="font-semibold text-foreground text-sm mb-1">Detalhamento do valor</h3>
 
@@ -362,7 +371,6 @@ export const Step3Checkout: React.FC = () => {
         </div>
       </div>
 
-      {/* Cashback toggle */}
       {walletBalance > 0 && (
         <div className="bg-card border border-border rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
@@ -391,7 +399,6 @@ export const Step3Checkout: React.FC = () => {
         </div>
       )}
 
-      {/* Payment method */}
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium text-foreground">Forma de pagamento</p>
         <div className="grid grid-cols-2 gap-3">
@@ -418,7 +425,6 @@ export const Step3Checkout: React.FC = () => {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex gap-3 pt-1">
         <button
           onClick={goBack}

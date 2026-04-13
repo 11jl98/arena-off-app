@@ -35,8 +35,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
     mutationFn: (receiptData: string) =>
       CashbackService.scanQrReceipt({ receiptData }),
     onSuccess: (data) => {
-      // Optimistic update: reflect new balance immediately so the user
-      // sees it the instant the drawer closes, before the refetch arrives
       queryClient.setQueriesData<CashbackWallet>(
         { queryKey: ['cashback-wallet'] },
         (old) =>
@@ -48,10 +46,8 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
               }
             : old
       );
-      // Invalidate so the server value is confirmed shortly after
       queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['cashback-transactions'] });
-      // FIX: backend returns cashback in reais — no /100 needed
       const earned = data.cashbackEarned.toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL',
@@ -67,16 +63,13 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
   });
 
   const stopScanner = async () => {
-    // FIX: check ref  safe from async callbacks, never stale
     if (scannerRef.current && scanningRef.current) {
       scanningRef.current = false;
       setIsScanning(false);
       try {
         await scannerRef.current.stop();
         scannerRef.current.clear();
-      } catch {
-        // ignore cleanup errors
-      }
+      } catch { /* empty */ }
     }
   };
 
@@ -84,9 +77,8 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
     const elementId = 'qr-reader';
     if (!document.getElementById(elementId)) return;
 
-    // Clean up any previous (failed) instance before retrying
     if (scannerRef.current) {
-      try { scannerRef.current.clear(); } catch { /* ignore */ }
+      try { scannerRef.current.clear(); } catch { /* empty */ }
       scannerRef.current = null;
     }
 
@@ -109,15 +101,14 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
       };
 
       const scanConfig = {
-        fps: 15, // FIX: more frames = faster detection on dense NFCe QR codes
-        qrbox: { width: 300, height: 300 }, // FIX: larger box for high-density QR
+        fps: 15,
+        qrbox: { width: 300, height: 300 },
         videoConstraints: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
         } as MediaTrackConstraints,
       };
 
-      // FIX: try exact rear camera first  prevents silent fallback to front cam on Android
       try {
         await scanner.start(
           { facingMode: { exact: 'environment' } } as { facingMode: ConstrainDOMString },
@@ -150,15 +141,14 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
   useEffect(() => {
     if (open) {
       scannedRef.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsProcessing(false);
       setPermissionError(null);
-      // Small delay to let the drawer animate in before mounting the scanner
       const timer = setTimeout(() => startScanner(), 500);
       return () => clearTimeout(timer);
     } else {
       stopScanner();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const handleClose = () => {
@@ -205,19 +195,16 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
             </div>
           ) : (
             <div className="w-full relative">
-              {/* Scanner container */}
               <div
                 id="qr-reader"
                 className="w-full rounded-2xl overflow-hidden"
                 style={{ minHeight: 280 }}
               />
-              {/* Loading overlay */}
               {!isScanning && !permissionError && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-2xl">
                   <Loader2 size={28} className="animate-spin text-primary" />
                 </div>
               )}
-              {/* Processing overlay */}
               {isProcessing && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-2xl gap-3">
                   <Loader2 size={32} className="animate-spin text-white" />

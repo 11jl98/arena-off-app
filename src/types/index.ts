@@ -1,7 +1,3 @@
-/**
- * Tipos globais da aplicação
- */
-
 export interface ApiResponse<T> {
   data: T;
   message?: string;

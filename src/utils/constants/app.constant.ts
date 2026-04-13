@@ -1,7 +1,3 @@
-/**
- * Constantes da aplicação
- */
-
 export const APP_NAME = 'Arena Off Beach';
 export const APP_VERSION = 'v1.0.0';
 

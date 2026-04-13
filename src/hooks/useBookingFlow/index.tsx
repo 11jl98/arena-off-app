@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState } from 'react';
 import type { Court, Sport } from '@/types/court';
 import type { AvailableSlot, PaymentMethod, Booking } from '@/types/booking';

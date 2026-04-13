@@ -5,7 +5,7 @@ export interface User {
   email: string;
   name: string;
   avatarUrl?: string;
-  photoURL?: string; // Alias for Firebase compatibility
+  photoURL?: string;
   role: UserRole;
   isBlocked: boolean;
   cashbackBalance?: number;
