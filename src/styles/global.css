@@ -25,7 +25,7 @@
   --ring: 22 92% 48%;
   --success: 142 55% 38%;
   --success-foreground: 0 0% 100%;
-  --radius: 0.75rem;
+  --radius: 0.5rem;
   --button-colors: 22, 92%, 48%;
 }
 
@@ -82,7 +82,7 @@ body {
   -webkit-text-size-adjust: 100%;
   touch-action: pan-y;
   background-color: hsl(var(--background));
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.5;
 }
 

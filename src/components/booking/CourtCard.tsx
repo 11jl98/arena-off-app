@@ -16,9 +16,9 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court, onSelect, className
         className
       )}
     >
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border px-4 py-3.5 flex items-start justify-between gap-3">
+      <div className="bg-linear-to-r from-primary/10 to-primary/5 border-b border-border px-3 py-2.5 flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-foreground text-base leading-tight truncate">
+          <h3 className="font-bold text-foreground text-sm leading-tight truncate">
             {court.name}
           </h3>
           {court.description && (
@@ -29,7 +29,7 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court, onSelect, className
         </div>
         <div className="text-right shrink-0">
           <p className="text-xs text-muted-foreground leading-none mb-0.5">por hora</p>
-          <p className="text-xl font-bold text-primary">
+          <p className="text-lg font-bold text-primary">
             {court.pricePerHour.toLocaleString('pt-BR', {
               style: 'currency',
               currency: 'BRL',
@@ -38,7 +38,7 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court, onSelect, className
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-3">
         <div className="flex items-center gap-2 mb-4">
           {court.covered && (
             <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400 rounded-full px-2.5 py-0.5">
@@ -62,7 +62,7 @@ export const CourtCard: React.FC<CourtCardProps> = ({ court, onSelect, className
 
         <button
           onClick={() => onSelect(court)}
-          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-2.5 rounded-xl text-sm active:scale-[0.98] transition-transform"
+          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-2 rounded-xl text-sm active:scale-[0.98] transition-transform"
         >
           Selecionar quadra
           <ChevronRight size={16} />

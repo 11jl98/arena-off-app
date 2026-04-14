@@ -19,12 +19,12 @@ export const BookingCard: React.FC<BookingCardProps> = ({ booking, onClick, clas
     <button
       onClick={onClick}
       className={cn(
-        'w-full text-left bg-card border border-border rounded-xl p-4 shadow-sm',
+        'w-full text-left bg-card border border-border rounded-xl p-3 shadow-sm',
         'active:scale-[0.98] transition-transform duration-100',
         className
       )}
     >
-      <div className="flex items-start justify-between gap-2 mb-3">
+      <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 text-muted-foreground text-xs mb-0.5">
             <MapPin size={12} />

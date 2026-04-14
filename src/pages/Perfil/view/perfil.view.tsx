@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -35,6 +36,7 @@ export const PerfilView: React.FC = () => {
   const { user, logout } = useAuth();
   const { setUser } = useUserStore();
   const { theme, setTheme } = useTheme();
+  const { isStandalone } = useDeviceDetection();
   const { success: showSuccess, error: showError } = useNotify();
 
   const {
@@ -68,23 +70,26 @@ export const PerfilView: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="bg-gradient-to-r from-primary to-orange-600 px-4 pt-12 pb-16">
-        <h1 className="text-2xl font-bold text-white">Perfil</h1>
+      <div
+        className="bg-linear-to-r from-primary to-orange-600 px-4 pb-10"
+        style={{ paddingTop: isStandalone ? 'calc(2rem + env(safe-area-inset-top))' : '0.75rem' }}
+      >
+        <h1 className="text-xl font-bold text-white">Perfil</h1>
         <p className="text-white/80 text-sm mt-0.5">Suas informações pessoais</p>
       </div>
 
-      <div className="flex justify-center -mt-12 mb-4">
+      <div className="flex justify-center -mt-10 mb-4">
         <div className="relative">
           {avatarSrc ? (
             <img
               src={avatarSrc}
               alt={user?.name}
               referrerPolicy="no-referrer"
-              className="w-24 h-24 rounded-full object-cover border-4 border-background shadow-lg"
+              className="w-20 h-20 rounded-full object-cover border-4 border-background shadow-lg"
             />
           ) : (
-            <div className="w-24 h-24 rounded-full bg-muted border-4 border-background shadow-lg flex items-center justify-center">
-              <User size={36} className="text-muted-foreground" />
+            <div className="w-20 h-20 rounded-full bg-muted border-4 border-background shadow-lg flex items-center justify-center">
+              <User size={30} className="text-muted-foreground" />
             </div>
           )}
         </div>
@@ -169,9 +174,9 @@ export const PerfilView: React.FC = () => {
 
         <button
           onClick={logout}
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-semibold text-sm active:scale-[0.98] transition-transform"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 font-semibold text-sm active:scale-[0.98] transition-transform"
         >
-          <LogOut size={18} />
+          <LogOut size={15} />
           Sair da conta
         </button>
       </div>

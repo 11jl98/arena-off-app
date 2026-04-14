@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, Loader2, CalendarDays, History, Plus } from 'lucide-react';
 import { BookingFlowProvider, useBookingFlow } from '@/hooks/useBookingFlow';
@@ -122,11 +123,15 @@ type ActiveTab = 'nova' | 'historico';
 
 export const ReservasView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('nova');
+  const { isStandalone } = useDeviceDetection();
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="bg-linear-to-r from-primary to-orange-600 px-4 pt-12 pb-6">
-        <h1 className="text-2xl font-bold text-white">Reservas</h1>
+      <div
+        className="bg-linear-to-r from-primary to-orange-600 px-4 pb-4"
+        style={{ paddingTop: isStandalone ? 'calc(2rem + env(safe-area-inset-top))' : '0.75rem' }}
+      >
+        <h1 className="text-xl font-bold text-white">Reservas</h1>
         <p className="text-white/80 text-sm mt-0.5">Agende quadras e veja seu histórico</p>
       </div>
 

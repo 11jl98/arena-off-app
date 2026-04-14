@@ -38,14 +38,14 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
     <div className="flex items-center gap-3 py-3">
       <div
         className={cn(
-          'w-10 h-10 rounded-full flex items-center justify-center shrink-0',
+          'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
           config.earned
             ? 'bg-green-100 dark:bg-green-900/30'
             : 'bg-red-100 dark:bg-red-900/30'
         )}
       >
         <Icon
-          size={18}
+          size={15}
           className={
             config.earned
               ? 'text-green-600 dark:text-green-400'

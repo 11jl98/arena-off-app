@@ -24,30 +24,24 @@ export function LoginView() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-linear-to-b from-[#FF8424] to-[#FF5722] px-6">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-linear-to-b from-[#FF8424] to-[#FF5722] px-6"
+    >
       <div className="absolute inset-0 overflow-hidden opacity-10">
-        <svg className="absolute h-full w-full" xmlns="http://www.w3.org/2000/svg">
-          <pattern id="waves" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-            <path d="M0 50 Q 25 40, 50 50 T 100 50" stroke="white" strokeWidth="2" fill="none" />
-            <path d="M0 60 Q 25 50, 50 60 T 100 60" stroke="white" strokeWidth="2" fill="none" />
-          </pattern>
-          <rect width="100%" height="100%" fill="url(#waves)" />
-        </svg>
       </div>
 
-      <div className="relative z-10 mb-16 text-center">
-        <div className="relative mx-auto mb-8 flex h-32 w-32 items-center justify-center">
+      <div className="relative z-10 mb-10 text-center">
+        <div className="relative mx-auto mb-5 flex h-24 w-24 items-center justify-center">
           <div className="absolute inset-0 animate-pulse rounded-full bg-white/30 blur-3xl" />
           <img
             src="/logo.jpg"
             alt="Arena Off Beach"
-            className="relative h-32 w-32 rounded-3xl object-cover shadow-2xl ring-4 ring-white/20"
+            className="relative h-24 w-24 rounded-2xl object-cover shadow-2xl ring-4 ring-white/20"
           />
         </div>
-        <h1 className="text-4xl font-black tracking-tight text-white drop-shadow-lg">
+        <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-lg">
           Arena Off Beach
         </h1>
-        <p className="mt-3 text-base font-medium text-white/90 drop-shadow">
+        <p className="mt-2 text-sm font-medium text-white/90 drop-shadow">
           Reserve quadras, ganhe cashback
         </p>
       </div>
@@ -56,9 +50,9 @@ export function LoginView() {
         <Button
           onClick={loginWithGoogle}
           variant="default"
-          className="w-full gap-3 rounded-2xl bg-white py-7 text-base font-bold text-gray-900 shadow-xl transition-all hover:scale-105 hover:bg-white hover:shadow-2xl active:scale-95"
+          className="w-full gap-3 rounded-2xl bg-white py-4 text-sm font-bold text-gray-900 shadow-xl transition-all hover:scale-105 hover:bg-white hover:shadow-2xl active:scale-95"
         >
-          <svg viewBox="0 0 24 24" className="h-6 w-6">
+          <svg viewBox="0 0 24 24" className="h-5 w-5">
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"

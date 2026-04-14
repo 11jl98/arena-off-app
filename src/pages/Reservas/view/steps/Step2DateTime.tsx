@@ -85,7 +85,7 @@ export const Step2DateTime: React.FC = () => {
                 key={day.toISOString()}
                 onClick={() => selectDate(day)}
                 className={cn(
-                  'shrink-0 flex flex-col items-center justify-center w-14 py-2.5 rounded-2xl border transition-all duration-150 active:scale-95',
+                  'shrink-0 flex flex-col items-center justify-center w-12 py-2 rounded-xl border transition-all duration-150 active:scale-95',
                   isSelected
                     ? 'bg-primary border-primary text-primary-foreground shadow-md'
                     : 'bg-card border-border text-foreground'
@@ -99,7 +99,7 @@ export const Step2DateTime: React.FC = () => {
                 >
                   {DAY_ABBRS[day.getDay()]}
                 </span>
-                <span className="text-xl font-bold leading-none">{format(day, 'd')}</span>
+                <span className="text-lg font-bold leading-none">{format(day, 'd')}</span>
                 <span
                   className={cn(
                     'text-[10px] mt-1 leading-none capitalize',

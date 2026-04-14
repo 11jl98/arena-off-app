@@ -4,7 +4,8 @@ export const SplashScreen = () => {
   return (
     <div
       className="fixed inset-0 flex flex-col items-center justify-center gap-8 bg-linear-to-b from-[#FF8424] to-[#FF5722]"
-      style={{ zIndex: 9999 }}
+      style={{ zIndex: 9999, paddingBottom: 'max(env(safe-area-inset-bottom), 8px)', }}
+      
     >
       <div className="flex flex-col items-center gap-6 animate-fade-in">
         <img

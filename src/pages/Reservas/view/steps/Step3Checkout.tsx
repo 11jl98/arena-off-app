@@ -168,7 +168,7 @@ export const Step3Checkout: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
+      <div className="bg-card border border-border rounded-2xl p-3 flex flex-col gap-3">
         <h3 className="font-semibold text-foreground text-sm mb-1">Resumo da reserva</h3>
 
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -193,7 +193,7 @@ export const Step3Checkout: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
+      <div className="bg-card border border-border rounded-2xl p-3 flex flex-col gap-3">
         <h3 className="font-semibold text-sm text-foreground">Qual esporte você vai jogar?</h3>
         <div className="flex flex-wrap gap-2">
           {sports.map((sport) => (
@@ -412,13 +412,13 @@ export const Step3Checkout: React.FC = () => {
               key={value}
               onClick={() => setPaymentMethod(value)}
               className={cn(
-                'flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border text-sm font-medium transition-all duration-150',
+                'flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl border text-sm font-medium transition-all duration-150',
                 paymentMethod === value
                   ? 'bg-primary/10 border-primary text-primary'
                   : 'bg-card border-border text-muted-foreground'
               )}
             >
-              <Icon size={24} />
+              <Icon size={20} />
               {label}
             </button>
           ))}

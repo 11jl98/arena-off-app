@@ -11,18 +11,18 @@ interface WalletCardProps {
 
 export const WalletCard: React.FC<WalletCardProps> = ({ wallet, loading }) => {
   return (
-    <div className="bg-gradient-to-br from-primary to-orange-600 rounded-3xl p-6 text-white shadow-lg shadow-primary/30">
+    <div className="bg-linear-to-br from-primary to-orange-600 rounded-2xl p-4 text-white shadow-lg shadow-primary/30">
       <p className="text-white/70 text-sm mb-1">Saldo disponível</p>
 
       {loading ? (
-        <div className="h-10 w-36 bg-white/20 rounded-xl animate-pulse mb-6" />
+        <div className="h-8 w-32 bg-white/20 rounded-xl animate-pulse mb-4" />
       ) : (
-        <p className="text-4xl font-bold tracking-tight mb-6">
+        <p className="text-3xl font-bold tracking-tight mb-4">
           {fmt(wallet?.balance ?? 0)}
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <div className="bg-white/15 rounded-2xl p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <Lock size={13} className="text-white/70" />

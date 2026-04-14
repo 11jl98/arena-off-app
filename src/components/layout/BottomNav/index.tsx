@@ -11,8 +11,10 @@ const NAV_ITEMS = [
 
 export const BottomNav: React.FC = () => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
-      <div className="flex items-stretch h-16">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border"
+    >
+      <div className="flex items-stretch h-12">
         {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -28,13 +30,13 @@ export const BottomNav: React.FC = () => {
           >
             {({ isActive }) => (
               <>
-                <div className={cn('p-2 rounded-xl transition-colors duration-150', isActive && 'bg-primary/10')}>
+                <div className={cn('p-1.5 rounded-lg transition-colors duration-150', isActive && 'bg-primary/10')}>
                   <Icon
                     className={cn(
                       'transition-transform duration-150',
                       isActive ? 'scale-110 stroke-[2.5]' : 'stroke-[1.75]'
                     )}
-                    size={22}
+                    size={18}
                   />
                 </div>
                 <span

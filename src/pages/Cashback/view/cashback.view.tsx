@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useQuery } from '@tanstack/react-query';
 import { ScanLine, Loader2, Receipt } from 'lucide-react';
 import { WalletCard } from '@/components/cashback/WalletCard';
@@ -10,6 +11,7 @@ import { useUserStore } from '@/store/userStore';
 export const CashbackView: React.FC = () => {
   const [scannerOpen, setScannerOpen] = useState(false);
   const currentUser = useUserStore((s) => s.user);
+  const { isStandalone } = useDeviceDetection();
   const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'EMPLOYEE';
   const staffClientId = isStaff ? currentUser?.id : undefined;
 
@@ -32,8 +34,11 @@ export const CashbackView: React.FC = () => {
   return (
     <>
       <div className="flex flex-col min-h-full">
-        <div className="bg-gradient-to-r from-primary to-orange-600 px-4 pt-12 pb-20">
-          <h1 className="text-2xl font-bold text-white">Cashback</h1>
+        <div
+          className="bg-linear-to-r from-primary to-orange-600 px-4 pb-14"
+          style={{ paddingTop: isStandalone ? 'calc(2rem + env(safe-area-inset-top))' : '0.75rem' }}
+        >
+          <h1 className="text-xl font-bold text-white">Cashback</h1>
           <p className="text-white/80 text-sm mt-0.5">
             Escaneie notas e acumule créditos
           </p>
@@ -46,9 +51,9 @@ export const CashbackView: React.FC = () => {
         <div className="px-4 mb-6">
           <button
             onClick={() => setScannerOpen(true)}
-            className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-semibold py-4 rounded-2xl shadow-lg shadow-primary/25 active:scale-[0.98] transition-transform"
+            className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground font-semibold py-3 rounded-2xl shadow-lg shadow-primary/25 active:scale-[0.98] transition-transform"
           >
-            <ScanLine size={22} />
+            <ScanLine size={18} />
             Escanear nota fiscal
           </button>
         </div>
