@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -35,14 +35,14 @@
 
     <style>
       :root {
-        --bg-light: #E8610A;
-        --bg-dark: #E8610A;
+        --bg-light: #e8610a;
+        --bg-dark: #e8610a;
       }
       html {
-        background-color: #E8610A;
+        background-color: #e8610a;
       }
       html.light {
-        background-color: #E8610A;
+        background-color: #e8610a;
       }
       body {
         margin: 0;
@@ -55,7 +55,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(180deg, #FF8424 0%, #FF5722 100%);
+        background: linear-gradient(180deg, #ff8424 0%, #ff5922 100%);
         z-index: 9999;
         transition: opacity 0.3s ease-out;
       }
@@ -71,8 +71,13 @@
         animation: pulse 2s ease-in-out infinite;
       }
       @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
       }
     </style>
 
@@ -105,10 +110,10 @@
     <div id="splash-loader">
       <img src="/logo.jpg" alt="Arena Off Beach" />
     </div>
-    
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    
+
     <script>
       // Remove splash quando React carregar
       window.addEventListener('DOMContentLoaded', () => {

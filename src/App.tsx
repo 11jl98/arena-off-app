@@ -8,12 +8,20 @@ import { Toaster } from 'sonner';
 
 const App: React.FC = () => {
   useTheme();
-  const { checkAuth, isChecking } = useAuth();
+  const { checkAuth, clearSession, isChecking } = useAuth();
 
   useEffect(() => {
     checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      clearSession();
+    };
+    window.addEventListener('session-expired', handleSessionExpired);
+    return () => window.removeEventListener('session-expired', handleSessionExpired);
+  }, [clearSession]);
 
   if (isChecking) {
     return <SplashScreen />;

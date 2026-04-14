@@ -1,9 +1,15 @@
 import { APP_NAME, APP_VERSION } from '@/utils/constants/app.constant';
+import { useLayoutEffect } from 'react';
 
 export const SplashScreen = () => {
+
+  useLayoutEffect(() => {
+    document.body.style.backgroundColor = '#ff5922';
+  }, []);
+
   return (
     <div
-      className="fixed inset-0 flex flex-col items-center justify-center gap-8 bg-linear-to-b from-[#FF8424] to-[#FF5722]"
+      className="fixed inset-0 flex flex-col items-center justify-center gap-8 bg-linear-to-b from-[#FF8424] to-[#ff5922]"
       style={{ zIndex: 9999, paddingBottom: 'max(env(safe-area-inset-bottom), 8px)', }}
       
     >

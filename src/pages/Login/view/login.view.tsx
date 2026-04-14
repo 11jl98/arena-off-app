@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
@@ -9,6 +9,12 @@ export function LoginView() {
   const { isAuthenticated, isChecking, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
+  useLayoutEffect(() => {
+    const stateColor = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = '#ff5922';
+    return () => { document.body.style.backgroundColor = stateColor; };
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated && !isChecking) {
       navigate(ROUTES.HOME, { replace: true });
@@ -17,14 +23,14 @@ export function LoginView() {
 
   if (isChecking) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-dvh items-center justify-center bg-linear-to-b from-[#FF8424] to-[#ff5922]">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-linear-to-b from-[#FF8424] to-[#FF5722] px-6"
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-linear-to-b from-[#FF8424] to-[#ff5922] px-6"
     >
       <div className="absolute inset-0 overflow-hidden opacity-10">
       </div>

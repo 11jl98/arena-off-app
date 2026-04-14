@@ -3,22 +3,11 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useDeviceDetection } from './hooks/useDeviceDetection';
 import { ROUTES } from './utils/constants/app.constant';
-import { SplashScreen } from './components/SplashScreen';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { AuthGuard } from './components/guards/AuthGuard';
 import { AppLayout } from './components/layout/AppLayout';
-
-const LandingPage = React.lazy(() =>
-  import('./pages/Landing/landing.page').then((module) => ({
-    default: module.LandingPage,
-  }))
-);
-
-const LoginPage = React.lazy(() =>
-  import('./pages/Login/login.page').then((module) => ({
-    default: module.LoginPage,
-  }))
-);
+import { LandingPage } from './pages/Landing/landing.page';
+import { LoginPage } from './pages/Login/login.page';
 
 const ReservasPage = React.lazy(() =>
   import('./pages/Reservas/reservas.page').then((module) => ({
@@ -48,7 +37,7 @@ export const AppRoutes: React.FC = () => {
   const { isAuthenticated, isChecking } = useAuth();
   const { isStandalone } = useDeviceDetection();
 
-  if (isChecking) return <SplashScreen />;
+  if (isChecking) return null;
 
   const defaultRoute = isAuthenticated
     ? ROUTES.RESERVAS
@@ -57,11 +46,17 @@ export const AppRoutes: React.FC = () => {
       : ROUTES.LANDING;
 
   return (
-    <React.Suspense fallback={<SplashScreen />}>
+    <React.Suspense fallback={null}>
       <Routes>
         <Route element={<PublicLayout />}>
-          <Route path={ROUTES.LANDING} element={<LandingPage />} />
-          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+          <Route
+            path={ROUTES.LANDING}
+            element={isAuthenticated ? <Navigate to={ROUTES.RESERVAS} replace /> : <LandingPage />}
+          />
+          <Route
+            path={ROUTES.LOGIN}
+            element={isAuthenticated ? <Navigate to={ROUTES.RESERVAS} replace /> : <LoginPage />}
+          />
         </Route>
 
         <Route element={<AuthGuard />}>

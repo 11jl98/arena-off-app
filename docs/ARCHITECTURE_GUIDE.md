@@ -434,7 +434,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#FF5722',
+        primary: '#ff5922',
         secondary: '#FF8424',
         // ... outros
       },
@@ -478,8 +478,8 @@ workbox.routing.registerRoute(
   "short_name": "Arena Off",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FF5722",
-  "theme_color": "#FF5722",
+  "background_color": "#ff5922",
+  "theme_color": "#ff5922",
   "icons": [
     {
       "src": "/icon-192.png",

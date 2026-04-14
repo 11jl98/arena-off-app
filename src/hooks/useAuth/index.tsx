@@ -11,13 +11,16 @@ export const useAuth = () => {
         isAuthenticated,
         isChecking,
         setAuthenticated,
-        setTokens,
         setIsChecking,
         reset: resetAuth,
     } = useAuthStore();
     const { user, setUser, clearUserProfile } = useUserStore();
     const navigate = useNavigate();
 
+    const clearSession = useCallback(() => {
+        resetAuth();
+        clearUserProfile();
+    }, [resetAuth, clearUserProfile]);
 
     const loginWithGoogle = useCallback(async () => {
         try {
@@ -29,7 +32,6 @@ export const useAuth = () => {
                 photoURL: response.user.avatarUrl,
             };
 
-            setTokens(response.accessToken, response.refreshToken);
             setUser(mappedUser);
             setAuthenticated(true);
             showSuccess('Login realizado com sucesso!');
@@ -43,47 +45,53 @@ export const useAuth = () => {
         } finally {
             setIsChecking(false);
         }
-    }, [setIsChecking, setTokens, setUser, setAuthenticated, showSuccess, navigate, showError]);
+    }, [setIsChecking, setUser, setAuthenticated, showSuccess, navigate, showError]);
 
+    /**
+     * Verifica a sessão chamando /auth/me.
+     * O cookie httpOnly é enviado automaticamente pelo browser.
+     * - Sucesso → atualiza usuário e marca autenticado
+     * - 401 definitivo (após refresh falhar) → limpa sessão e redireciona para login
+     * - Erro de rede/offline → preserva estado atual sem deslogar (comportamento de app nativo)
+     */
     const checkAuth = useCallback(async () => {
         try {
             setIsChecking(true);
-            if (!isAuthenticated) {
-                setIsChecking(false);
-                return false;
-            }
-
             const response = await AuthService.getProfile();
             const mappedUser = {
                 ...response.user,
                 photoURL: response.user.avatarUrl,
             };
             setUser(mappedUser);
+            setAuthenticated(true);
             return true;
-        } catch {
-            resetAuth();
-            clearUserProfile();
-            return false;
+        } catch (err: unknown) {
+            const status = (err as any)?.status;
+            const message = (err as any)?.message;
+
+            // Sessão definitivamente expirada — refresh também falhou
+            if (status === 401 || message === 'Session expired') {
+                clearSession();
+                return false;
+            }
+
+            // Erro de rede, servidor indisponível, offline:
+            // manter estado atual sem deslogar (age como app nativo)
+            console.warn('[Auth] Não foi possível verificar sessão (erro de rede):', message);
+            return isAuthenticated;
         } finally {
             setIsChecking(false);
         }
-    }, [
-        isAuthenticated,
-        setUser,
-        resetAuth,
-        clearUserProfile,
-        setIsChecking,
-    ]);
+    }, [isAuthenticated, setUser, setAuthenticated, clearSession, setIsChecking]);
 
     const logout = useCallback(async () => {
         try {
             await AuthService.signOut();
             showSuccess('Logout realizado com sucesso!');
         } finally {
-            resetAuth();
-            clearUserProfile();
+            clearSession();
         }
-    }, [resetAuth, clearUserProfile, showSuccess]);
+    }, [clearSession, showSuccess]);
 
     return {
         user,
@@ -93,5 +101,6 @@ export const useAuth = () => {
         signOut: logout,
         logout,
         checkAuth,
+        clearSession,
     };
 };

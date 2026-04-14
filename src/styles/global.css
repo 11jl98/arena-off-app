@@ -58,6 +58,7 @@
 * {
   border-color: hsl(var(--border));
   user-select: none;
+  
 }
 
 input,

@@ -59,6 +59,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
       showError(err.message || 'Erro ao processar a nota. Tente novamente.');
       scannedRef.current = false;
       setIsProcessing(false);
+      onClose();
     },
   });
 
@@ -201,7 +202,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
                 className="w-full rounded-2xl overflow-hidden"
                 style={{ minHeight: 'min(280px, 45dvh)' }}
               />
-              {!isScanning && !permissionError && (
+              {!isScanning && !permissionError && !isProcessing && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-2xl">
                   <Loader2 size={28} className="animate-spin text-primary" />
                 </div>

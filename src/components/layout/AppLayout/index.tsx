@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CalendarDays, Wallet, User, Menu, X } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -16,6 +16,10 @@ export const AppLayout: React.FC = () => {
   const { isStandalone, isMobile } = useDeviceDetection();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const location = useLocation();
+
+  useLayoutEffect(() => {
+    document.body.style.backgroundColor = '';
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

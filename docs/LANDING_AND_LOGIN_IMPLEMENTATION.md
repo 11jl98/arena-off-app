@@ -54,7 +54,7 @@ Landing/
    - Copyright
 
 **Design:**
-- Gradientes em tons de laranja (#FF8424, #FF6B35, #FF5722)
+- Gradientes em tons de laranja (#FF8424, #FF6B35, #ff5922)
 - Totalmente responsivo (mobile-first)
 - Animações suaves (hover, transitions)
 - Ícones do Lucide React
@@ -204,7 +204,7 @@ Acessa qualquer URL → Home (/home)
 ## 🎨 Design System
 
 ### Cores Principais
-- **Primary Orange**: #FF5722, #FF6B35, #FF8424
+- **Primary Orange**: #ff5922, #FF6B35, #FF8424
 - **Neutros**: slate-50 a slate-900
 - **Backgrounds**: Gradientes lineares
 

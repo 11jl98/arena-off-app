@@ -61,8 +61,8 @@ export function LandingView() {
   ];
 
   return (
-    <div className="min-h-dvh bg-linear-to-b from-slate-50 to-white">
-      <div className="relative overflow-hidden bg-linear-to-br from-[#FF8424] via-[#FF6B35] to-[#FF5722]">
+    <div className="min-h-dvh bg-linear-to-b from-slate-50 to-white ">
+      <div className="relative overflow-hidden bg-linear-to-br from-[#FF8424] via-[#FF6B35] to-[#ff5922]">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-40" />
         
         <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -83,7 +83,7 @@ export function LandingView() {
             <Button
               onClick={handleLoginClick}
               variant="secondary"
-              className="rounded-xl bg-white/90 font-bold text-[#FF5722] backdrop-blur-sm transition-all hover:scale-105 hover:bg-white"
+              className="rounded-xl bg-white/90 font-bold text-[#ff5922] backdrop-blur-sm transition-all hover:scale-105 hover:bg-white"
             >
               Entrar
             </Button>
@@ -109,7 +109,7 @@ export function LandingView() {
               <Button
                 onClick={handleLoginClick}
                 size="lg"
-                className="gap-2 rounded-2xl bg-white py-6 text-base font-bold text-[#FF5722] shadow-2xl transition-all hover:scale-105 hover:bg-white"
+                className="gap-2 rounded-2xl bg-white py-6 text-base font-bold text-[#ff5922] shadow-2xl transition-all hover:scale-105 hover:bg-white"
               >
                 <Calendar className="h-5 w-5" />
                 Começar Agora
@@ -168,7 +168,7 @@ export function LandingView() {
           <Button
             onClick={handleLoginClick}
             size="lg"
-            className="gap-2 rounded-2xl bg-[#FF5722] py-6 text-base font-bold text-white shadow-xl transition-all hover:scale-105 hover:bg-[#FF6B35]"
+            className="gap-2 rounded-2xl bg-[#ff5922] py-6 text-base font-bold text-white shadow-xl transition-all hover:scale-105 hover:bg-[#FF6B35]"
           >
             <Calendar className="h-5 w-5" />
             Fazer Reserva
@@ -202,7 +202,7 @@ export function LandingView() {
                 }
               ].map((item) => (
                 <div key={item.step} className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-[#FF8424] to-[#FF5722] font-bold text-white shadow-lg">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-[#FF8424] to-[#ff5922] font-bold text-white shadow-lg">
                     {item.step}
                   </div>
                   <div>
@@ -224,7 +224,7 @@ export function LandingView() {
               </div>
               <div className="p-6">
                 <div className="mb-4 flex items-start gap-3">
-                  <MapPin className="mt-1 h-5 w-5 shrink-0 text-[#FF5722]" />
+                  <MapPin className="mt-1 h-5 w-5 shrink-0 text-[#ff5922]" />
                   <div>
                     <p className="font-medium text-slate-900">Arena Off Beach</p>
                     <p className="text-sm text-slate-600">
@@ -253,7 +253,7 @@ export function LandingView() {
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             <div>
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FF5722]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ff5922]">
                   <Trophy className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-lg font-bold">Arena Off Beach</span>

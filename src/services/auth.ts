@@ -20,8 +20,6 @@ export interface AuthResponse {
     isBlocked: boolean;
     createdAt: string;
   };
-  accessToken: string;
-  refreshToken: string;
 }
 
 export interface ProfileResponse {
@@ -69,14 +67,6 @@ export const AuthService = {
     }
     
     await httpClient.post('/auth/logout', {});
-  },
-
-  async refreshToken(): Promise<{ accessToken: string; refreshToken: string }> {
-    const response = await httpClient.post<{ accessToken: string; refreshToken: string }>(
-      '/auth/refresh',
-      {}
-    );
-    return response;
   },
 
   async updateProfile(data: { name: string; photoURL?: string }): Promise<ProfileResponse> {
