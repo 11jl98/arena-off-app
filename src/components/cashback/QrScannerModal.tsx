@@ -1,4 +1,4 @@
-Ôªøimport { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { X, Camera, AlertCircle, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -52,7 +52,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
         style: 'currency',
         currency: 'BRL',
       });
-      showSuccess(`Cashback de ${earned} adicionado √† sua carteira! üéâ`);
+      showSuccess(`Cashback de ${earned} adicionado ‡ sua carteira! ??`);
       handleClose();
     },
     onError: (err: Error) => {
@@ -90,7 +90,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
         if (scannedRef.current) return;
 
         if (!isNfceUrl(decodedText)) {
-          showError('QR Code n√£o reconhecido como nota fiscal. Aponte para o QR da NFCe.');
+          showError('QR Code n„o reconhecido como nota fiscal. Aponte para o QR da NFCe.');
           return;
         }
 
@@ -104,6 +104,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
         fps: 15,
         qrbox: { width: 300, height: 300 },
         videoConstraints: {
+          facingMode: { ideal: 'environment' },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         } as MediaTrackConstraints,
@@ -129,11 +130,11 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
       setIsScanning(true);
       setPermissionError(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao acessar c√¢mera';
+      const message = err instanceof Error ? err.message : 'Erro ao acessar c‚mera';
       setPermissionError(
         message.toLowerCase().includes('permission')
-          ? 'C√¢mera negada. Permita o acesso √† c√¢mera nas configura√ß√µes do navegador.'
-          : 'N√£o foi poss√≠vel iniciar a c√¢mera: ' + message
+          ? 'C‚mera negada. Permita o acesso ‡ c‚mera nas configuraÁıes do navegador.'
+          : 'N„o foi possÌvel iniciar a c‚mera: ' + message
       );
     }
   };
@@ -176,7 +177,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
 
         <div className="px-4 pb-10 flex flex-col items-center gap-5">
           <p className="text-sm text-muted-foreground text-center">
-            Aponte a c√¢mera para o QR Code da sua nota fiscal para resgatar cashback.
+            Aponte a c‚mera para o QR Code da sua nota fiscal para resgatar cashback.
           </p>
 
           {permissionError ? (
@@ -215,7 +216,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
           )}
 
           <p className="text-xs text-muted-foreground text-center px-4">
-            O QR Code geralmente est√° no rodap√© da nota fiscal ou cupom eletr√¥nico.
+            O QR Code geralmente est· no rodapÈ da nota fiscal ou cupom eletrÙnico.
           </p>
         </div>
       </DrawerContent>

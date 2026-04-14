@@ -1,5 +1,5 @@
 import { httpClient } from './api';
-import { signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '@/config/firebase';
 
 export interface GoogleAuthPayload {
@@ -37,69 +37,23 @@ export interface ProfileResponse {
 }
 
 export const AuthService = {
- 
-  async signInWithGoogle(): Promise<void> {
-    await signInWithRedirect(auth, googleProvider);
-  },
 
-  async handleRedirectResult(): Promise<AuthResponse | null> {
-    try {
-      console.log('[AuthService] Checking for redirect result...');
-      
-      let result = await getRedirectResult(auth);
-      
-      if (!result) {
-        console.log('[AuthService] First attempt: No redirect result');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        result = await getRedirectResult(auth);
-      }
-      
-      if (!result) {
-        console.log('[AuthService] Second attempt: No redirect result');
-        
-        if (auth.currentUser) {
-          console.log('[AuthService] Found currentUser, using it instead', auth.currentUser.email);
-          const user = auth.currentUser;
-          const idToken = await user.getIdToken();
+  async signInWithGoogle(): Promise<AuthResponse> {
+    const result = await signInWithPopup(auth, googleProvider);
 
-          const payload: GoogleAuthPayload = {
-            idToken,
-            email: user.email || '',
-            name: user.displayName || '',
-            googleId: user.uid,
-            avatarUrl: user.photoURL || undefined,
-          };
+    const user = result.user;
+    const idToken = await user.getIdToken();
 
-          console.log('[AuthService] Sending authentication to backend...');
-          const response = await httpClient.post<AuthResponse>('/auth/google', payload);
-          console.log('[AuthService] Authentication successful via currentUser');
-          return response;
-        }
-        
-        console.log('[AuthService] No redirect result or currentUser found');
-        return null;
-      }
+    const payload: GoogleAuthPayload = {
+      idToken,
+      email: user.email || '',
+      name: user.displayName || '',
+      googleId: user.uid,
+      avatarUrl: user.photoURL || undefined,
+    };
 
-      console.log('[AuthService] Redirect result found, processing user...', result.user.email);
-      const user = result.user;
-      const idToken = await user.getIdToken();
-
-      const payload: GoogleAuthPayload = {
-        idToken,
-        email: user.email || '',
-        name: user.displayName || '',
-        googleId: user.uid,
-        avatarUrl: user.photoURL || undefined,
-      };
-
-      console.log('[AuthService] Sending authentication to backend...');
-      const response = await httpClient.post<AuthResponse>('/auth/google', payload);
-      console.log('[AuthService] Authentication successful');
-      return response;
-    } catch (error) {
-      console.error('[AuthService] Firebase Auth Error:', error);
-      throw error;
-    }
+    const response = await httpClient.post<AuthResponse>('/auth/google', payload);
+    return response;
   },
 
   async getProfile(): Promise<ProfileResponse> {

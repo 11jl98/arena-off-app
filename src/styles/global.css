@@ -72,7 +72,9 @@ body {
   overflow: hidden;
 }
 
-
+html {
+  overscroll-behavior: none;
+}
 
 body {
   color: hsl(var(--foreground));

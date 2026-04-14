@@ -1,20 +1,54 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X, Download } from 'lucide-react';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 
 export function InstallPWABanner() {
   const [dismissed, setDismissed] = useState(() => {
-    return localStorage.getItem('pwa-banner-dismissed') === 'false';
+    return localStorage.getItem('pwa-banner-dismissed') === 'true';
   });
-  
-  const { isMobile, isStandalone } = useDeviceDetection();
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null);
+  const [canInstall, setCanInstall] = useState(false);
+
+  const { isStandalone } = useDeviceDetection();
+
+  useEffect(() => {
+    const handler = (e: BeforeInstallPromptEvent) => {
+      e.preventDefault();
+      deferredPromptRef.current = e;
+      setCanInstall(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler as EventListener);
+
+    const onInstalled = () => {
+      setCanInstall(false);
+      deferredPromptRef.current = null;
+    };
+    window.addEventListener('appinstalled', onInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler as EventListener);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    const prompt = deferredPromptRef.current;
+    if (!prompt) return;
+    await prompt.prompt();
+    const { outcome } = await prompt.userChoice;
+    if (outcome === 'accepted') {
+      setCanInstall(false);
+      deferredPromptRef.current = null;
+    }
+  };
 
   const handleDismiss = () => {
     setDismissed(true);
     localStorage.setItem('pwa-banner-dismissed', 'true');
   };
 
-  if (!isMobile || isStandalone || dismissed) {
+  if (!canInstall || isStandalone || dismissed) {
     return null;
   }
 
@@ -35,13 +69,21 @@ export function InstallPWABanner() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleDismiss}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/40 text-slate-600 transition hover:bg-white/70"
-            aria-label="Fechar"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={handleInstall}
+              className="rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-600 active:scale-95"
+            >
+              Instalar
+            </button>
+            <button
+              onClick={handleDismiss}
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/40 text-slate-600 transition hover:bg-white/70"
+              aria-label="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

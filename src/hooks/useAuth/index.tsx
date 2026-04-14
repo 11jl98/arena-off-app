@@ -22,31 +22,8 @@ export const useAuth = () => {
     const loginWithGoogle = useCallback(async () => {
         try {
             setIsChecking(true);
-            await AuthService.signInWithGoogle();
-        } catch (err: unknown) {
-            setIsChecking(false);
-            const message =
-                (err as any)?.response?.data?.message ||
-                (err as any)?.message ||
-                'Erro ao fazer login com Google';
-            showError(message);
-            throw err;
-        }
-    }, [setIsChecking, showError]);
+            const response = await AuthService.signInWithGoogle();
 
-    const handleRedirectResult = useCallback(async () => {
-        try {
-            console.log('[useAuth] Starting handleRedirectResult...');
-            setIsChecking(true);
-            const response = await AuthService.handleRedirectResult();
-
-            if (!response) {
-                console.log('[useAuth] No redirect result to process');
-                setIsChecking(false);
-                return false;
-            }
-
-            console.log('[useAuth] Processing authentication response...');
             const mappedUser = {
                 ...response.user,
                 photoURL: response.user.avatarUrl,
@@ -55,22 +32,16 @@ export const useAuth = () => {
             setTokens(response.accessToken, response.refreshToken);
             setUser(mappedUser);
             setAuthenticated(true);
-
-            console.log('[useAuth] User authenticated, navigating to home...');
             showSuccess('Login realizado com sucesso!');
             navigate(ROUTES.HOME, { replace: true });
-
-            setIsChecking(false);
-            return true;
         } catch (err: unknown) {
-            console.error('[useAuth] Error processing redirect:', err);
             const message =
                 (err as any)?.response?.data?.message ||
                 (err as any)?.message ||
                 'Erro ao fazer login com Google';
             showError(message);
+        } finally {
             setIsChecking(false);
-            return false;
         }
     }, [setIsChecking, setTokens, setUser, setAuthenticated, showSuccess, navigate, showError]);
 
@@ -119,7 +90,6 @@ export const useAuth = () => {
         isAuthenticated,
         isChecking,
         loginWithGoogle,
-        handleRedirectResult,
         signOut: logout,
         logout,
         checkAuth,

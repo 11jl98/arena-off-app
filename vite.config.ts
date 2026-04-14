@@ -6,8 +6,8 @@ import { visualizer } from 'rollup-plugin-visualizer';
 
 const API_PROXY_TARGET = process.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-const certPath = './cert/192.168.15.4.pem';
-const keyPath = './cert/192.168.15.4-key.pem';
+const certPath = './cert/192.168.15.3.pem';
+const keyPath = './cert/192.168.15.3-key.pem';
 const hasLocalCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
 // https://vite.dev/config/
@@ -55,13 +55,25 @@ export default defineConfig({
             src: 'logo.jpg',
             sizes: '192x192',
             type: 'image/jpeg',
-            purpose: 'any maskable',
+            purpose: 'any',
+          },
+          {
+            src: 'logo.jpg',
+            sizes: '192x192',
+            type: 'image/jpeg',
+            purpose: 'maskable',
           },
           {
             src: 'logo.jpg',
             sizes: '512x512',
             type: 'image/jpeg',
-            purpose: 'any maskable',
+            purpose: 'any',
+          },
+          {
+            src: 'logo.jpg',
+            sizes: '512x512',
+            type: 'image/jpeg',
+            purpose: 'maskable',
           },
         ],
       },
