@@ -11,7 +11,7 @@ export const useTheme = () => {
     root.classList.remove('light', 'dark');
 
     if (theme === 'system') {
-      root.classList.add('light');
+      root.classList.add('system');
     } else {
       root.classList.add(theme);
     }

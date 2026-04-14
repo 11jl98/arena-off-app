@@ -114,15 +114,6 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <script>
-      // Remove splash quando React carregar
-      window.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-          const splash = document.getElementById('splash-loader');
-          if (splash) splash.classList.add('hide');
-          setTimeout(() => splash && splash.remove(), 300);
-        }, 500);
-      });
-    </script>
+
   </body>
 </html>

@@ -5,15 +5,16 @@ export const SplashScreen = () => {
 
   useLayoutEffect(() => {
     document.body.style.backgroundColor = '#ff5922';
+    const el = document.getElementById('splash-loader');
+    if (el) el.remove();
   }, []);
 
   return (
     <div
       className="fixed inset-0 flex flex-col items-center justify-center gap-8 bg-linear-to-b from-[#FF8424] to-[#ff5922]"
-      style={{ zIndex: 9999, paddingBottom: 'max(env(safe-area-inset-bottom), 8px)', }}
-      
+      style={{ zIndex: 9999, paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
     >
-      <div className="flex flex-col items-center gap-6 animate-fade-in">
+      <div className="flex flex-col items-center gap-6">
         <img
           src="/logo.jpg"
           alt={APP_NAME}
