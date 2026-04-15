@@ -10,7 +10,6 @@ import { Step4Success } from './steps/Step4Success';
 import { BookingCard } from '@/components/booking/BookingCard';
 import { BookingDetailSheet } from '@/components/booking/BookingDetailSheet';
 import { BookingsService } from '@/services/bookings';
-import { useUserStore } from '@/store/userStore';
 import { cn } from '@/lib/utils';
 
 const STEP_TITLES = ['Escolha a quadra', 'Data e horário', 'Confirmação', 'Reservado!'];
@@ -69,17 +68,18 @@ const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory 
 
 const HistoryTab: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const currentUser = useUserStore((s) => s.user);
 
   const { data, isLoading } = useQuery({
     queryKey: ['my-bookings'],
     queryFn: () => BookingsService.listMyBookings({ pageSize: 50 }),
-    staleTime: 60 * 1000,
+    staleTime: 15_000,
+    refetchInterval: (query) => {
+      const bookings = query.state.data ?? [];
+      return bookings.some((b) => b.status === 'PENDING') ? 15_000 : false;
+    },
   });
 
-  const bookings = (data ?? []).filter(
-    (b) => !currentUser || b.clientId === currentUser.id
-  );
+  const bookings = data ?? [];
 
   return (
     <>

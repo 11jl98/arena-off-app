@@ -3,6 +3,9 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CalendarDays, Wallet, User, Menu, X } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
+import { useNotifications } from '@/hooks/useNotifications';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { NotificationsDrawer } from '@/components/notifications/NotificationsDrawer';
 import { ROUTES } from '@/utils/constants/app.constant';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +19,7 @@ export const AppLayout: React.FC = () => {
   const { isStandalone, isMobile } = useDeviceDetection();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const location = useLocation();
+  const { drawerOpen, openDrawer, closeDrawer } = useNotifications();
 
   useLayoutEffect(() => {
     document.body.style.backgroundColor = '';
@@ -29,6 +33,14 @@ export const AppLayout: React.FC = () => {
   if (isStandalone) {
     return (
       <div className="flex flex-col h-dvh w-full bg-background overflow-hidden">
+        {/* Floating bell — appears above page content, respects safe area */}
+        <div
+          className="fixed right-4 z-50"
+          style={{ top: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
+        >
+          <NotificationBell onClick={openDrawer} />
+        </div>
+
         <main
           className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
           style={{ paddingBottom: 'calc(3rem + env(safe-area-inset-bottom))' }}
@@ -36,6 +48,8 @@ export const AppLayout: React.FC = () => {
           <Outlet />
         </main>
         <BottomNav />
+
+        <NotificationsDrawer open={drawerOpen} onClose={closeDrawer} />
       </div>
     );
   }
@@ -59,10 +73,11 @@ export const AppLayout: React.FC = () => {
           >
             {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1">
             <img src="/logo.jpg" alt="Arena Off" className="w-7 h-7 rounded-lg object-cover shrink-0 shadow" />
             <span className="text-sm font-bold text-white">Arena Off</span>
           </div>
+          <NotificationBell onClick={openDrawer} />
         </header>
 
         {/* Backdrop */}
@@ -125,15 +140,22 @@ export const AppLayout: React.FC = () => {
         >
           <Outlet />
         </main>
+
+        <NotificationsDrawer open={drawerOpen} onClose={closeDrawer} />
       </div>
     );
   }
 
   return (
     <div className="flex flex-row h-dvh w-full bg-background overflow-hidden">
+      {/* Desktop — minimal layout, bell in top-right corner */}
+      <div className="fixed top-4 right-4 z-50">
+        <NotificationBell onClick={openDrawer} className="text-foreground/60 hover:text-foreground hover:bg-muted" />
+      </div>
       <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <Outlet />
       </main>
+      <NotificationsDrawer open={drawerOpen} onClose={closeDrawer} />
     </div>
   );
 };

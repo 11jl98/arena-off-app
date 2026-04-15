@@ -2,6 +2,7 @@ import { httpClient } from './api';
 import type {
   Booking,
   CreateBookingPayload,
+  UpdateBookingPayload,
   AvailableSlotsParams,
   AvailableSlot,
   CheckAvailabilityPayload,
@@ -11,6 +12,9 @@ export interface ListBookingsParams {
   page?: number;
   pageSize?: number;
   status?: string;
+  courtId?: string;
+  date?: string;
+  paymentStatus?: string;
 }
 
 interface AvailableSlotsResponse {
@@ -29,6 +33,9 @@ export const BookingsService = {
     if (params?.page) queryParams.page = String(params.page);
     if (params?.pageSize) queryParams.pageSize = String(params.pageSize);
     if (params?.status) queryParams.status = params.status;
+    if (params?.courtId) queryParams.courtId = params.courtId;
+    if (params?.date) queryParams.date = params.date;
+    if (params?.paymentStatus) queryParams.paymentStatus = params.paymentStatus;
 
     return httpClient.get<Booking[]>('/bookings', { params: queryParams });
   },
@@ -37,8 +44,16 @@ export const BookingsService = {
     return httpClient.get<Booking>(`/bookings/${id}`);
   },
 
+  async updateBooking(id: string, payload: UpdateBookingPayload): Promise<Booking> {
+    return httpClient.patch<Booking>(`/bookings/${id}`, payload);
+  },
+
   async cancelBooking(id: string): Promise<Booking> {
     return httpClient.post<Booking>(`/bookings/${id}/cancel`, {});
+  },
+
+  async confirmBooking(id: string): Promise<Booking> {
+    return httpClient.post<Booking>(`/bookings/${id}/confirm`, {});
   },
 
   async getAvailableSlots(params: AvailableSlotsParams): Promise<AvailableSlot[]> {

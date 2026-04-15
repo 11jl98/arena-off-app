@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, parseISO, addHours, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,26 @@ import {
   AlertTriangle,
   Loader2,
   Ban,
+  Hourglass,
 } from 'lucide-react';
+
+function useCountdown(expiresAt: string | null | undefined): string | null {
+  const [display, setDisplay] = useState<string | null>(null);
+  useEffect(() => {
+    if (!expiresAt) { setDisplay(null); return; }
+    const tick = () => {
+      const diff = new Date(expiresAt).getTime() - Date.now();
+      if (diff <= 0) { setDisplay(null); return; }
+      const m = Math.floor(diff / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setDisplay(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+  return display;
+}
 import {
   Drawer,
   DrawerContent,
@@ -49,8 +68,14 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
     queryKey: ['booking', bookingId],
     queryFn: () => BookingsService.getBooking(bookingId!),
     enabled: !!bookingId,
-    staleTime: 30 * 1000,
+    staleTime: 0,
+    refetchInterval: (query) =>
+      query.state.data?.status === 'PENDING' ? 10_000 : false,
   });
+
+  const countdown = useCountdown(
+    booking?.status === 'PENDING' ? booking.pendingExpiresAt : null
+  );
 
   const { mutate: cancelBooking, isPending: cancelling } = useMutation({
     mutationFn: () => BookingsService.cancelBooking(bookingId!),
@@ -62,7 +87,13 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
       onClose();
     },
     onError: (err: Error) => {
-      showError(err.message || 'Erro ao cancelar reserva.');
+      const msg =
+        (err as unknown as { status?: number }).status === 403 ||
+        err.message?.includes('403') ||
+        err.message?.toLowerCase().includes('own bookings')
+          ? 'Você não pode cancelar a reserva de outro cliente.'
+          : err.message || 'Erro ao cancelar reserva.';
+      showError(msg);
       setConfirmCancel(false);
     },
   });
@@ -70,8 +101,15 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
   const isCancellableStatus =
     booking?.status === 'PENDING' || booking?.status === 'CONFIRMED';
 
+  // Reservas PENDING sem pagamento podem ser canceladas a qualquer momento
+  const isPendingUnpaid =
+    booking?.status === 'PENDING' &&
+    booking?.paymentMethod === 'MERCADO_PAGO' &&
+    booking?.paymentStatus === 'PENDING';
+
   const isCancellableByTime = (() => {
     if (!booking) return false;
+    if (isPendingUnpaid) return true;
     const dateOnly = booking.date.substring(0, 10);
     const bookingStart = new Date(`${dateOnly}T${booking.startTime}:00`);
     return isBefore(addHours(new Date(), 2), bookingStart);
@@ -112,6 +150,21 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                 </div>
                 <BookingStatusBadge status={booking.status} />
               </div>
+
+              {booking.status === 'PENDING' && (
+                <div className={`flex items-center gap-2 rounded-xl px-3 py-2.5 border text-sm ${
+                  countdown
+                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300'
+                    : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400'
+                }`}>
+                  <Hourglass size={15} className="shrink-0" />
+                  <span className="font-medium">
+                    {countdown
+                      ? `Aguardando confirmação — expira em ${countdown}`
+                      : 'Aguardando confirmação do administrador'}
+                  </span>
+                </div>
+              )}
 
               <div className="bg-muted/50 rounded-2xl p-4 grid grid-cols-2 gap-4 text-sm">
                 <div className="flex flex-col gap-0.5">

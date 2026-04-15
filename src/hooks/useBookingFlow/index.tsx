@@ -13,6 +13,7 @@ interface BookingFlowState {
   cashbackAmount: number;
   paymentMethod: PaymentMethod;
   createdBooking: Booking | null;
+  pendingExpiresAt: string | null;
 }
 
 interface BookingFlowActions {
@@ -24,6 +25,8 @@ interface BookingFlowActions {
   setCashbackAmount: (amount: number) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setCreatedBooking: (booking: Booking) => void;
+  /** Update the created booking in-place (e.g. status changed via polling) */
+  updateCreatedBooking: (booking: Booking) => void;
   goNext: () => void;
   goBack: () => void;
   reset: () => void;
@@ -40,6 +43,7 @@ const initialState: BookingFlowState = {
   cashbackAmount: 0,
   paymentMethod: 'PRESENCIAL',
   createdBooking: null,
+  pendingExpiresAt: null,
 };
 
 const BookingFlowCtx = createContext<BookingFlowContext | null>(null);
@@ -59,7 +63,17 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSport: (sport) => update({ selectedSport: sport }),
     setCashbackAmount: (cashbackAmount) => update({ cashbackAmount }),
     setPaymentMethod: (paymentMethod) => update({ paymentMethod }),
-    setCreatedBooking: (booking) => update({ createdBooking: booking, step: 4 }),
+    setCreatedBooking: (booking) =>
+      update({
+        createdBooking: booking,
+        pendingExpiresAt: booking.pendingExpiresAt ?? null,
+        step: 4,
+      }),
+    updateCreatedBooking: (booking) =>
+      update({
+        createdBooking: booking,
+        pendingExpiresAt: booking.pendingExpiresAt ?? null,
+      }),
     goNext: () =>
       setState((prev) => ({
         ...prev,

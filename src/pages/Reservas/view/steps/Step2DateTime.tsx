@@ -64,7 +64,7 @@ export const Step2DateTime: React.FC = () => {
         date: dateStr!,
       }),
     enabled: !!selectedCourt && !!dateStr,
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 
   const allSlots = slots as AvailableSlot[];
