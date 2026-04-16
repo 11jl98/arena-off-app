@@ -31,12 +31,14 @@ const App: React.FC = () => {
     <>
       <AppRoutes />
       <Toaster
-        position="top-center"
+        position="bottom-center"
+        richColors closeButton theme="system"
         toastOptions={{
           classNames: {
             toast: 'rounded-xl',
             title: 'font-semibold',
             description: 'text-sm',
+
           },
         }}
       />

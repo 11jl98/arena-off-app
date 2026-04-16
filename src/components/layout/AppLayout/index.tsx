@@ -77,7 +77,7 @@ export const AppLayout: React.FC = () => {
             <img src="/logo.jpg" alt="Arena Off" className="w-7 h-7 rounded-lg object-cover shrink-0 shadow" />
             <span className="text-sm font-bold text-white">Arena Off</span>
           </div>
-          <NotificationBell onClick={openDrawer} />
+          <NotificationBell onClick={openDrawer} className="mr-2" />
         </header>
 
         {/* Backdrop */}
@@ -94,9 +94,9 @@ export const AppLayout: React.FC = () => {
           className={cn(
             'fixed inset-y-0 left-0 z-50 flex flex-col w-50',
             'transition-transform duration-200 ease-in-out',
-            mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+            mobileNavOpen ? 'translate-x-0' : '-translate-x-full',
+            'bg-[hsl(22,60%,10%)] dark:bg-[hsl(24,20%,4%)]'
           )}
-          style={{ backgroundColor: 'hsl(22, 60%, 10%)' }}
           aria-label="Menu de navegação"
         >
           <div
