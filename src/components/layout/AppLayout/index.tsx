@@ -4,6 +4,7 @@ import { CalendarDays, Wallet, User, Menu, X } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useNotifications } from '@/hooks/useNotifications';
+import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { NotificationsDrawer } from '@/components/notifications/NotificationsDrawer';
 import { ROUTES } from '@/utils/constants/app.constant';
@@ -20,6 +21,7 @@ export const AppLayout: React.FC = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const location = useLocation();
   const { drawerOpen, openDrawer, closeDrawer } = useNotifications();
+  usePushSubscription();
 
   useLayoutEffect(() => {
     document.body.style.backgroundColor = '';

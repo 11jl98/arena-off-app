@@ -27,6 +27,15 @@ if ('serviceWorker' in navigator) {
       setTimeout(() => window.location.reload(), 100);
     }
   });
+
+  navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
+    if (event.data?.type === 'NOTIFICATION_CLICK') {
+      const url = event.data.url as string;
+      if (url && window.location.pathname !== url) {
+        window.location.href = url;
+      }
+    }
+  });
 }
 
 createRoot(document.getElementById('root')!).render(

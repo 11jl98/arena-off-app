@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle2, CalendarDays, Clock, MapPin, CreditCard, Hourglass, XCircle } from 'lucide-react';
+import { CheckCircle2, CalendarDays, Clock, MapPin, CreditCard, Hourglass, XCircle, Bell, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
 import { BookingsService } from '@/services/bookings';
+import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { cn } from '@/lib/utils';
 
 const fmt = (reais: number) =>
@@ -38,6 +39,16 @@ function useCountdown(expiresAt: string | null | undefined): string | null {
 
 export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewHistory }) => {
   const { createdBooking, pendingExpiresAt, updateCreatedBooking, reset } = useBookingFlow();
+  const { isSupported, requestPermissionAndSubscribe } = usePushSubscription();
+
+  const [showPushBanner, setShowPushBanner] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    if (!isSupported) return false;
+    if (typeof Notification === 'undefined') return false;
+    if (Notification.permission !== 'default') return false;
+    if (localStorage.getItem('push_asked') === '1') return false;
+    return true;
+  });
 
   const { data: polledBooking } = useQuery({
     queryKey: ['booking-poll', createdBooking?.id],
@@ -180,6 +191,41 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
           </div>
         )}
       </div>
+
+      {showPushBanner && !isCancelled && (
+        <div className="w-full flex items-start gap-3 bg-card border border-border rounded-2xl px-4 py-3">
+          <div className="mt-0.5 shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Bell size={16} className="text-primary" />
+          </div>
+          <div className="flex-1 flex flex-col gap-2">
+            <p className="text-sm font-semibold text-foreground leading-snug">
+              Receber notificações de confirmação?
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Avise-me quando o admin confirmar ou cancelar minha reserva.
+            </p>
+            <button
+              onClick={async () => {
+                setShowPushBanner(false);
+                await requestPermissionAndSubscribe();
+              }}
+              className="self-start bg-primary text-primary-foreground text-xs font-semibold px-4 py-1.5 rounded-lg active:scale-95 transition-transform"
+            >
+              Sim, quero!
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              localStorage.setItem('push_asked', '1');
+              setShowPushBanner(false);
+            }}
+            aria-label="Dispensar"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       <div className="w-full flex flex-col gap-3">
         <button

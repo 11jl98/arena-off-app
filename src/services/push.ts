@@ -6,6 +6,7 @@ export interface PushSubscriptionPayload {
     p256dh: string;
     auth: string;
   };
+  previousEndpoint?: string;
 }
 
 export const PushService = {
