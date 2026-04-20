@@ -40,6 +40,34 @@ const PROMOTION_TYPE_LABELS: Record<string, string> = {
   BIRTHDAY: 'Aniversário',
 };
 
+const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+function formatDaysOfWeek(days?: number[]): string {
+  if (!days || days.length === 0) return '';
+  if (days.length === 7) return 'Todos os dias';
+  const sorted = [...days].sort((a, b) => a - b);
+  const isConsecutive = sorted.every((d, i) => i === 0 || d === sorted[i - 1] + 1);
+  if (isConsecutive && sorted.length >= 3) {
+    return `${DAY_NAMES[sorted[0]]} a ${DAY_NAMES[sorted[sorted.length - 1]]}`;
+  }
+  return sorted.map((d) => DAY_NAMES[d]).join(', ');
+}
+
+function formatSpecialHoursDetail(promo: { startTime?: string; endTime?: string; daysOfWeek?: number[] }): string {
+  const parts: string[] = [];
+  if (promo.startTime && promo.endTime) {
+    parts.push(`${promo.startTime} – ${promo.endTime}`);
+  }
+  const days = formatDaysOfWeek(promo.daysOfWeek);
+  if (days) parts.push(days);
+  return parts.join(' · ');
+}
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
 export const Step3Checkout: React.FC = () => {
   const {
     selectedCourt,
@@ -96,7 +124,8 @@ export const Step3Checkout: React.FC = () => {
         clientId: currentUser!.id,
       }),
     enabled: !!dateStr && !!startTime && !!currentUser && basePriceReais > 0,
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const { data: myBookings = [] } = useQuery({
@@ -110,9 +139,23 @@ export const Step3Checkout: React.FC = () => {
     (b) => b.clientId === currentUser?.id && b.status !== 'CANCELLED'
   );
 
-  const filteredPromos = availablePromos.filter(
-    (p) => !(p.promotion.type === 'FIRST_BOOKING' && hasExistingBookings)
-  );
+  const filteredPromos = availablePromos.filter((p) => {
+    if (p.promotion.type === 'FIRST_BOOKING' && hasExistingBookings) return false;
+
+    // SPECIAL_HOURS: booking must cover the full promotional window.
+    // e.g. promo 17:00–20:00 = 3h window → booking of only 2h must NOT get this promo.
+    if (
+      p.promotion.type === 'SPECIAL_HOURS' &&
+      p.promotion.startTime &&
+      p.promotion.endTime
+    ) {
+      const promoWindowHours =
+        (timeToMinutes(p.promotion.endTime) - timeToMinutes(p.promotion.startTime)) / 60;
+      if (hours < promoWindowHours) return false;
+    }
+
+    return true;
+  });
 
   const activePromo: AppliedPromotion | null =
     selectedPromoId === ''
@@ -224,6 +267,18 @@ export const Step3Checkout: React.FC = () => {
         </div>
       )}
 
+      {!loadingPromos && filteredPromos.length === 0 && !!startTime && (
+        <div className="bg-muted/50 border border-border rounded-2xl p-3.5 flex items-center gap-3">
+          <Tag size={15} className="text-muted-foreground shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Nenhuma promoção disponível</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Este horário não está coberto por nenhuma promoção ativa.
+            </p>
+          </div>
+        </div>
+      )}
+
       {!loadingPromos && filteredPromos.length === 1 && (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 flex items-start gap-3">
           <Gift size={16} className="text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
@@ -240,6 +295,11 @@ export const Step3Checkout: React.FC = () => {
                 ? ` · +${filteredPromos[0].extraHours}h extra`
                 : ''}
             </p>
+            {filteredPromos[0].promotion.type === 'SPECIAL_HOURS' && (
+              <p className="text-xs text-green-500 dark:text-green-500 mt-0.5">
+                {formatSpecialHoursDetail(filteredPromos[0].promotion)}
+              </p>
+            )}
           </div>
           <span className="text-xs font-bold text-green-600 dark:text-green-400 shrink-0">
             -{fmt(filteredPromos[0].discountAmount)}
@@ -295,6 +355,11 @@ export const Step3Checkout: React.FC = () => {
                         {p.promotion.discountPercent ? ` · ${p.promotion.discountPercent}%` : ''}
                         {p.extraHours ? ` · +${p.extraHours}h extra` : ''}
                       </p>
+                      {p.promotion.type === 'SPECIAL_HOURS' && (
+                        <p className="text-xs text-muted-foreground/70">
+                          {formatSpecialHoursDetail(p.promotion)}
+                        </p>
+                      )}
                     </div>
                     <span className="text-xs font-bold text-green-600 dark:text-green-400 shrink-0 mt-0.5">
                       -{fmt(p.discountAmount)}

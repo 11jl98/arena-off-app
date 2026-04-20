@@ -76,7 +76,7 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
 
   if (!createdBooking) return null;
 
-  const date = parseISO(createdBooking.date);
+  const date = parseISO(createdBooking.date.substring(0, 10) + 'T12:00:00');
   const isPending = createdBooking.status === 'PENDING';
   const isCancelled = createdBooking.status === 'CANCELLED';
 

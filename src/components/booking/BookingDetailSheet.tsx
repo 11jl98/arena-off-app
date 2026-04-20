@@ -172,7 +172,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                     <CalendarDays size={11} /> Data
                   </span>
                   <span className="font-medium">
-                    {format(parseISO(booking.date), "dd/MM/yyyy", { locale: ptBR })}
+                    {format(parseISO(booking.date.substring(0, 10) + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })}
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">

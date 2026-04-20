@@ -34,7 +34,7 @@ function useCountdown(expiresAt: string | null | undefined): string | null {
 
 export const BookingCard: React.FC<BookingCardProps> = ({ booking, onClick, className }) => {
   const courtName = booking.court?.name ?? 'Quadra';
-  const date = parseISO(booking.date);
+  const date = parseISO(booking.date.substring(0, 10) + 'T12:00:00');
 
   const countdown = useCountdown(
     booking.status === 'PENDING' ? booking.pendingExpiresAt : null
