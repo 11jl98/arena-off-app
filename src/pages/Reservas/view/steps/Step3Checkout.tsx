@@ -17,6 +17,7 @@ import {
   ChevronUp,
   CheckCircle2,
   Gift,
+  AlertTriangle,
 } from 'lucide-react';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
 import { CashbackService } from '@/services/cashback';
@@ -80,13 +81,15 @@ export const Step3Checkout: React.FC = () => {
     paymentMethod,
     setPaymentMethod,
     setCreatedBooking,
+    setPixPaymentData,
+    setSelectedSlots,
+    setStep,
     goBack,
   } = useBookingFlow();
 
   const currentUser = useUserStore((s) => s.user);
   const { error: showError } = useNotify();
   const queryClient = useQueryClient();
-  const [redirecting, setRedirecting] = useState(false);
   const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null);
   const [showPromoList, setShowPromoList] = useState(false);
 
@@ -186,10 +189,17 @@ export const Step3Checkout: React.FC = () => {
       });
 
       if (paymentMethod === 'MERCADO_PAGO') {
-        setRedirecting(true);
-        const pref = await PaymentsService.createMercadoPagoPreference(booking.id);
-        window.location.href = pref.checkoutUrl;
-        return booking;
+        try {
+          const pixData = await PaymentsService.initiatePixPayment(booking.id);
+          setPixPaymentData(pixData);
+        } catch (pixError) {
+          try {
+            await BookingsService.cancelBooking(booking.id);
+          } catch {
+            // best-effort; ignore secondary failure
+          }
+          throw pixError;
+        }
       }
 
       return booking;
@@ -197,17 +207,23 @@ export const Step3Checkout: React.FC = () => {
     onSuccess: (booking) => {
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
-      if (paymentMethod !== 'MERCADO_PAGO') {
-        setCreatedBooking(booking);
-      }
+      setCreatedBooking(booking);
     },
     onError: (err: Error) => {
-      setRedirecting(false);
-      showError(err.message || 'Erro ao criar reserva. Tente novamente.');
+      const status = (err as unknown as { status?: number }).status;
+      if (status === 409) {
+        // Slot taken by concurrent reservation — invalidate cache, clear selection, return to Step2
+        queryClient.invalidateQueries({ queryKey: ['slots', selectedCourt?.id, dateStr] });
+        setSelectedSlots([]);
+        setStep(2);
+        showError('Este horário foi reservado por outra pessoa agora mesmo. Escolha outro horário.');
+      } else {
+        showError(err.message || 'Erro ao criar reserva. Tente novamente.');
+      }
     },
   });
 
-  const isLoading = isPending || redirecting;
+  const isLoading = isPending;
 
   return (
     <div className="flex flex-col gap-5">
@@ -464,6 +480,15 @@ export const Step3Checkout: React.FC = () => {
         </div>
       )}
 
+      {paymentMethod === 'MERCADO_PAGO' && (
+        <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
+          <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+            <span className="font-semibold">Atenção:</span> Ao pagar via PIX, a reserva não poderá ser cancelada após a confirmação do pagamento.
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium text-foreground">Forma de pagamento</p>
         <div className="grid grid-cols-2 gap-3">
@@ -507,7 +532,7 @@ export const Step3Checkout: React.FC = () => {
           {isLoading ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              {redirecting ? 'Redirecionando...' : 'Processando...'}
+              Processando...
             </>
           ) : (
             'Confirmar reserva'

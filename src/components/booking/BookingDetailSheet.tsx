@@ -12,6 +12,7 @@ import {
   Loader2,
   Ban,
   Hourglass,
+  Lock,
 } from 'lucide-react';
 
 function useCountdown(expiresAt: string | null | undefined): string | null {
@@ -101,7 +102,10 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
   const isCancellableStatus =
     booking?.status === 'PENDING' || booking?.status === 'CONFIRMED';
 
-  // Reservas PENDING sem pagamento podem ser canceladas a qualquer momento
+  const isPaidPix =
+    booking?.paymentStatus === 'PAID' &&
+    booking?.paymentMethod === 'MERCADO_PAGO';
+
   const isPendingUnpaid =
     booking?.status === 'PENDING' &&
     booking?.paymentMethod === 'MERCADO_PAGO' &&
@@ -115,7 +119,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
     return isBefore(addHours(new Date(), 2), bookingStart);
   })();
 
-  const canCancel = isCancellableStatus && isCancellableByTime;
+  const canCancel = isCancellableStatus && isCancellableByTime && !isPaidPix;
 
   return (
     <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
@@ -271,6 +275,20 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                       <p className="text-sm font-medium text-foreground">Cancelamento indisponível</p>
                       <p className="text-xs text-muted-foreground">
                         O prazo para cancelamento expirou. Reservas só podem ser canceladas com pelo menos 2 horas de antecedência.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isCancellableStatus && isPaidPix && (
+                <div className="pt-2">
+                  <div className="flex items-start gap-2 bg-muted/60 border border-border rounded-2xl p-4">
+                    <Lock size={16} className="text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-sm font-medium text-foreground">Cancelamento bloqueado</p>
+                      <p className="text-xs text-muted-foreground">
+                        Reservas pagas via PIX não podem ser canceladas pelo app. Entre em contato com a recepção para solicitar o cancelamento e reembolso.
                       </p>
                     </div>
                   </div>

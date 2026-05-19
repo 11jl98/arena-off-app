@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 import type { Court, Sport } from '@/types/court';
 import type { AvailableSlot, PaymentMethod, Booking } from '@/types/booking';
+import type { InitiatePixPaymentResponse } from '@/types';
 
 export type BookingStep = 1 | 2 | 3 | 4;
 
@@ -14,6 +15,7 @@ interface BookingFlowState {
   paymentMethod: PaymentMethod;
   createdBooking: Booking | null;
   pendingExpiresAt: string | null;
+  pixPaymentData: InitiatePixPaymentResponse | null;
 }
 
 interface BookingFlowActions {
@@ -25,8 +27,8 @@ interface BookingFlowActions {
   setCashbackAmount: (amount: number) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setCreatedBooking: (booking: Booking) => void;
-  /** Update the created booking in-place (e.g. status changed via polling) */
   updateCreatedBooking: (booking: Booking) => void;
+  setPixPaymentData: (data: InitiatePixPaymentResponse | null) => void;
   goNext: () => void;
   goBack: () => void;
   reset: () => void;
@@ -44,6 +46,7 @@ const initialState: BookingFlowState = {
   paymentMethod: 'PRESENCIAL',
   createdBooking: null,
   pendingExpiresAt: null,
+  pixPaymentData: null,
 };
 
 const BookingFlowCtx = createContext<BookingFlowContext | null>(null);
@@ -74,6 +77,7 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
         createdBooking: booking,
         pendingExpiresAt: booking.pendingExpiresAt ?? null,
       }),
+    setPixPaymentData: (pixPaymentData) => update({ pixPaymentData }),
     goNext: () =>
       setState((prev) => ({
         ...prev,

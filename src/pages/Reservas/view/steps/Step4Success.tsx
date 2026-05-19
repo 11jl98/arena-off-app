@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCircle2, CalendarDays, Clock, MapPin, CreditCard, Hourglass, XCircle, Bell, X } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { CheckCircle2, CalendarDays, Clock, MapPin, CreditCard, Hourglass, XCircle, Bell, X, Copy, ExternalLink, QrCode } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
 import { BookingsService } from '@/services/bookings';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
@@ -38,8 +38,10 @@ function useCountdown(expiresAt: string | null | undefined): string | null {
 }
 
 export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewHistory }) => {
-  const { createdBooking, pendingExpiresAt, updateCreatedBooking, reset } = useBookingFlow();
+  const { createdBooking, pendingExpiresAt, updateCreatedBooking, reset, pixPaymentData, paymentMethod, setStep } = useBookingFlow();
   const { isSupported, requestPermissionAndSubscribe } = usePushSubscription();
+  const queryClient = useQueryClient();
+  const [copied, setCopied] = useState(false);
 
   const [showPushBanner, setShowPushBanner] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -54,7 +56,7 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
     queryKey: ['booking-poll', createdBooking?.id],
     queryFn: () => BookingsService.getBooking(createdBooking!.id),
     enabled: !!createdBooking && createdBooking.status === 'PENDING',
-    refetchInterval: 10_000,
+    refetchInterval: paymentMethod === 'MERCADO_PAGO' ? 5_000 : 10_000,
     refetchIntervalInBackground: false,
     staleTime: 0,
   });
@@ -73,6 +75,19 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
   const countdown = useCountdown(
     createdBooking?.status === 'PENDING' ? pendingExpiresAt : null
   );
+
+  const prevCountdownRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (
+      prevCountdownRef.current != null &&
+      countdown === null &&
+      createdBooking?.status === 'PENDING'
+    ) {
+      queryClient.invalidateQueries({ queryKey: ['booking-poll', createdBooking.id] });
+    }
+    prevCountdownRef.current = countdown;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countdown]);
 
   if (!createdBooking) return null;
 
@@ -99,6 +114,8 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         <h2 className="text-xl font-bold text-foreground">
           {isCancelled
             ? 'Reserva expirada'
+            : isPending && paymentMethod === 'MERCADO_PAGO'
+            ? 'Pague com PIX'
             : isPending
             ? 'Aguardando confirmação'
             : 'Reserva confirmada!'}
@@ -106,6 +123,8 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         <p className="text-sm text-muted-foreground max-w-xs">
           {isCancelled
             ? 'A reserva foi cancelada pois não foi confirmada dentro do prazo. Qualquer cashback utilizado foi devolvido.'
+            : isPending && paymentMethod === 'MERCADO_PAGO'
+            ? 'Escaneie o QR code ou copie a chave PIX para pagar. A reserva será confirmada automaticamente após o pagamento.'
             : isPending
             ? 'Sua reserva foi recebida e está aguardando confirmação do administrador.'
             : 'Sua quadra está confirmada. Apareça no horário combinado e boa partida! 🏐'}
@@ -124,11 +143,79 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
           <Hourglass size={18} className="shrink-0" />
           <div className="flex flex-col gap-0.5">
             <span className="text-sm font-semibold">
-              {countdown ? `Confirme em ${countdown}` : 'Prazo de confirmação esgotando…'}
+              {countdown
+                ? paymentMethod === 'MERCADO_PAGO'
+                  ? `PIX expira em ${countdown}`
+                  : `Confirme em ${countdown}`
+                : 'Prazo de confirmação esgotando…'}
             </span>
             <span className="text-xs opacity-75">
-              Se não confirmada em 30 min, a reserva é cancelada automaticamente.
+              {paymentMethod === 'MERCADO_PAGO'
+                ? 'Se o pagamento PIX não for efetuado em 30 min, a reserva será cancelada.'
+                : 'Se não confirmada em 30 min, a reserva é cancelada automaticamente.'}
             </span>
+          </div>
+        </div>
+      )}
+
+      {isPending && paymentMethod === 'MERCADO_PAGO' && pixPaymentData && (
+        <div className="w-full bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 px-5 pt-5 pb-3 border-b border-border">
+            <QrCode size={16} className="text-primary" />
+            <span className="font-semibold text-foreground text-sm">Pague com PIX</span>
+            <span className="ml-auto flex items-center gap-1.5 text-xs text-yellow-600 dark:text-yellow-400 animate-pulse font-medium">
+              <Hourglass size={12} />
+              Aguardando pagamento...
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center gap-4 px-5 py-5">
+            <img
+              src={`data:image/png;base64,${pixPaymentData.pixQrCodeBase64}`}
+              alt="QR Code PIX"
+              width={200}
+              height={200}
+              className="rounded-xl border border-border"
+            />
+
+            <div className="w-full flex flex-col gap-1.5">
+              <p className="text-xs text-muted-foreground font-medium">Chave PIX (Cópia e Cola)</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-muted rounded-xl px-3 py-2 text-xs font-mono text-foreground truncate">
+                  {pixPaymentData.pixQrCode}
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(pixPaymentData.pixQrCode);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    } catch {
+                      // fallback: noop — clipboard not available in non-secure context
+                    }
+                  }}
+                  className={cn(
+                    'shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 active:scale-95',
+                    copied
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                      : 'bg-primary/10 text-primary'
+                  )}
+                >
+                  <Copy size={13} />
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </button>
+              </div>
+            </div>
+
+            <a
+              href={pixPaymentData.pixTicketUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 border border-border rounded-xl py-2.5 text-sm font-medium text-foreground active:scale-[0.98] transition-transform"
+            >
+              <ExternalLink size={14} />
+              Abrir no app do banco
+            </a>
           </div>
         </div>
       )}
@@ -234,6 +321,18 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         >
           Nova reserva
         </button>
+        {isCancelled && paymentMethod === 'MERCADO_PAGO' && (
+          <button
+            onClick={() => {
+              // Preserve selected court + date, invalidate slots and go back to Step2
+              queryClient.invalidateQueries({ queryKey: ['slots'] });
+              setStep(2);
+            }}
+            className="w-full bg-primary/10 border border-primary text-primary font-semibold py-3 rounded-xl text-sm active:scale-[0.98] transition-transform"
+          >
+            Escolher outro horário
+          </button>
+        )}
         <button
           onClick={() => { reset(); onViewHistory?.(); }}
           className="w-full border border-border text-foreground font-medium py-3 rounded-xl text-sm active:scale-[0.98] transition-transform"

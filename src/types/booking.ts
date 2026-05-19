@@ -5,7 +5,7 @@ export type BookingStatus =
   | 'COMPLETED'
   | 'NO_SHOW';
 
-export type PaymentStatus = 'PENDING' | 'PAID' | 'PARTIAL';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'REFUNDED';
 
 export type PaymentMethod = 'MERCADO_PAGO' | 'PRESENCIAL';
 
@@ -40,6 +40,8 @@ export interface Booking {
   cancelledAt?: string;
   /** Present only when status === 'PENDING' — 30-min expiry window */
   pendingExpiresAt?: string;
+  /** Mercado Pago order ID — set when payment is initiated */
+  mpOrderId?: string;
 }
 
 export interface AvailableSlot {
