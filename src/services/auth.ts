@@ -22,16 +22,25 @@ export interface AuthResponse {
   };
 }
 
+export interface ProfileClientProfile {
+  cpf?: string | null;
+  phone?: string | null;
+  birthDate?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+}
+
 export interface ProfileResponse {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: 'CLIENT' | 'EMPLOYEE' | 'ADMIN';
-    avatarUrl?: string;
-    isBlocked: boolean;
-    createdAt: string;
-  };
+  id: string;
+  email: string;
+  name: string;
+  role: 'CLIENT' | 'EMPLOYEE' | 'ADMIN';
+  avatarUrl?: string;
+  blocked: boolean;
+  clientProfile?: ProfileClientProfile | null;
+  createdAt: string;
 }
 
 export const AuthService = {
@@ -69,11 +78,13 @@ export const AuthService = {
     await httpClient.post('/auth/logout', {});
   },
 
-  async updateProfile(data: { name: string; photoURL?: string }): Promise<ProfileResponse> {
-    const response = await httpClient.patch<ProfileResponse>('/auth/me', {
-      name: data.name,
-      avatarUrl: data.photoURL,
-    });
+  async updateProfile(data: { name?: string; photoURL?: string; cpf?: string; phone?: string }): Promise<ProfileResponse> {
+    const body: Record<string, string | undefined> = {};
+    if (data.name !== undefined) body.name = data.name;
+    if (data.photoURL !== undefined) body.avatarUrl = data.photoURL;
+    if (data.cpf !== undefined) body.cpf = data.cpf;
+    if (data.phone !== undefined) body.phone = data.phone;
+    const response = await httpClient.patch<ProfileResponse>('/users/me', body);
     return response;
   },
 };

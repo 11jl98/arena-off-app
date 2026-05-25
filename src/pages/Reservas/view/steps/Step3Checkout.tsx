@@ -30,6 +30,7 @@ import { useNotify } from '@/hooks/useNotify';
 import { cn } from '@/lib/utils';
 import type { AppliedPromotion } from '@/types/promotion';
 import type { PaymentMethod } from '@/types/booking';
+import { CompleteProfileModal } from '@/components/booking/CompleteProfileModal';
 
 const fmt = (reais: number) =>
   reais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -92,6 +93,7 @@ export const Step3Checkout: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null);
   const [showPromoList, setShowPromoList] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const dateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   const startTime = selectedSlots[0]?.startTime ?? '';
@@ -107,6 +109,17 @@ export const Step3Checkout: React.FC = () => {
   });
 
   const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'EMPLOYEE';
+
+  const hasRequiredProfile =
+    isStaff || (!!currentUser?.cpf && !!currentUser?.phone);
+
+  function handleSelectPresencial() {
+    if (hasRequiredProfile) {
+      setPaymentMethod('PRESENCIAL');
+    } else {
+      setShowProfileModal(true);
+    }
+  }
 
   const { data: wallet } = useQuery({
     queryKey: ['cashback-wallet', isStaff ? currentUser?.id : undefined],
@@ -145,8 +158,6 @@ export const Step3Checkout: React.FC = () => {
   const filteredPromos = availablePromos.filter((p) => {
     if (p.promotion.type === 'FIRST_BOOKING' && hasExistingBookings) return false;
 
-    // SPECIAL_HOURS: booking must cover the full promotional window.
-    // e.g. promo 17:00–20:00 = 3h window → booking of only 2h must NOT get this promo.
     if (
       p.promotion.type === 'SPECIAL_HOURS' &&
       p.promotion.startTime &&
@@ -212,7 +223,6 @@ export const Step3Checkout: React.FC = () => {
     onError: (err: Error) => {
       const status = (err as unknown as { status?: number }).status;
       if (status === 409) {
-        // Slot taken by concurrent reservation — invalidate cache, clear selection, return to Step2
         queryClient.invalidateQueries({ queryKey: ['slots', selectedCourt?.id, dateStr] });
         setSelectedSlots([]);
         setStep(2);
@@ -500,7 +510,9 @@ export const Step3Checkout: React.FC = () => {
           ).map(({ value, icon: Icon, label }) => (
             <button
               key={value}
-              onClick={() => setPaymentMethod(value)}
+              onClick={() =>
+                value === 'PRESENCIAL' ? handleSelectPresencial() : setPaymentMethod(value)
+              }
               className={cn(
                 'flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl border text-sm font-medium transition-all duration-150',
                 paymentMethod === value
@@ -525,7 +537,13 @@ export const Step3Checkout: React.FC = () => {
           Voltar
         </button>
         <button
-          onClick={() => confirmBooking()}
+          onClick={() => {
+            if (paymentMethod === 'PRESENCIAL' && !isStaff && !hasRequiredProfile) {
+              setShowProfileModal(true);
+              return;
+            }
+            confirmBooking();
+          }}
           disabled={isLoading || !selectedSport}
           className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-3 rounded-xl text-sm disabled:opacity-60 active:scale-[0.98] transition-transform"
         >
@@ -539,6 +557,15 @@ export const Step3Checkout: React.FC = () => {
           )}
         </button>
       </div>
+
+      <CompleteProfileModal
+        open={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onSuccess={() => {
+          setShowProfileModal(false);
+          setPaymentMethod('PRESENCIAL');
+        }}
+      />
     </div>
   );
 };

@@ -195,7 +195,7 @@ Use the `@Roles()` decorator to protect routes:
 
 ```typescript
 import { Roles } from 'src/app/commons/decorators/roles.decorator';
-import { Role } from 'generated/prisma';
+import { Role } from '../../../generated/prisma';
 
 @Get('admin/dashboard')
 @Roles(Role.ADMIN)
@@ -394,7 +394,7 @@ api.interceptors.response.use(
 - Verify CORS configuration
 - Ensure domain matches in production
 
-**4. "Cannot find module 'generated/prisma'"**
+**4. "Cannot find module '../../../generated/prisma'"**
 - Run `npx prisma generate`
 - Restart your TS server
 

@@ -47,20 +47,22 @@ export const useAuth = () => {
         }
     }, [setIsChecking, setUser, setAuthenticated, showSuccess, navigate, showError]);
 
-    /**
-     * Verifica a sessão chamando /auth/me.
-     * O cookie httpOnly é enviado automaticamente pelo browser.
-     * - Sucesso → atualiza usuário e marca autenticado
-     * - 401 definitivo (após refresh falhar) → limpa sessão e redireciona para login
-     * - Erro de rede/offline → preserva estado atual sem deslogar (comportamento de app nativo)
-     */
     const checkAuth = useCallback(async () => {
         try {
             setIsChecking(true);
             const response = await AuthService.getProfile();
             const mappedUser = {
-                ...response.user,
-                photoURL: response.user.avatarUrl,
+                id: response.id,
+                email: response.email,
+                name: response.name,
+                role: response.role,
+                avatarUrl: response.avatarUrl,
+                photoURL: response.avatarUrl,
+                isBlocked: response.blocked,
+                clientProfile: response.clientProfile,
+                cpf: response.clientProfile?.cpf ?? null,
+                phone: response.clientProfile?.phone ?? null,
+                createdAt: response.createdAt,
             };
             setUser(mappedUser);
             setAuthenticated(true);

@@ -13,6 +13,9 @@ import {
   Moon,
   Sun,
   Monitor,
+  Phone,
+  CreditCard,
+  Pencil,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
@@ -20,6 +23,8 @@ import { AuthService } from '@/services/auth';
 import { useUserStore } from '@/store';
 import { useNotify } from '@/hooks/useNotify';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { CompleteProfileModal } from '@/components/booking/CompleteProfileModal';
 
 const schema = z.object({
   name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres').max(60),
@@ -38,6 +43,9 @@ export const PerfilView: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { isStandalone } = useDeviceDetection();
   const { success: showSuccess, error: showError } = useNotify();
+  const [showContactModal, setShowContactModal] = useState(false);
+
+  const isClient = user?.role === 'CLIENT';
 
   const {
     register,
@@ -57,8 +65,20 @@ export const PerfilView: React.FC = () => {
     mutationFn: (values: FormValues) =>
       AuthService.updateProfile({ name: values.name }),
     onSuccess: (res) => {
-      setUser({ ...res.user, photoURL: res.user.avatarUrl });
-      reset({ name: res.user.name });
+      setUser({
+        id: res.id,
+        email: res.email,
+        name: res.name,
+        role: res.role,
+        avatarUrl: res.avatarUrl,
+        photoURL: res.avatarUrl,
+        isBlocked: res.blocked,
+        clientProfile: res.clientProfile,
+        cpf: res.clientProfile?.cpf ?? null,
+        phone: res.clientProfile?.phone ?? null,
+        createdAt: res.createdAt,
+      });
+      reset({ name: res.name });
       showSuccess('Perfil atualizado com sucesso!');
     },
     onError: (err: Error) => {
@@ -146,6 +166,57 @@ export const PerfilView: React.FC = () => {
           )}
         </form>
 
+        {isClient && (
+          <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-foreground text-sm">Dados de contato</h2>
+              <button
+                onClick={() => setShowContactModal(true)}
+                className="flex items-center gap-1.5 text-xs text-primary font-medium active:opacity-70 transition-opacity"
+              >
+                <Pencil size={12} />
+                Editar
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                <CreditCard size={12} />
+                CPF
+              </label>
+              <div
+                className={cn(
+                  'w-full px-3.5 py-2.5 rounded-xl text-sm border border-transparent',
+                  user?.cpf ? 'bg-muted/50 text-foreground' : 'bg-muted/30 text-muted-foreground italic'
+                )}
+              >
+                {user?.cpf ?? 'Não informado'}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                <Phone size={12} />
+                Telefone
+              </label>
+              <div
+                className={cn(
+                  'w-full px-3.5 py-2.5 rounded-xl text-sm border border-transparent',
+                  user?.phone ? 'bg-muted/50 text-foreground' : 'bg-muted/30 text-muted-foreground italic'
+                )}
+              >
+                {user?.phone ?? 'Não informado'}
+              </div>
+            </div>
+
+            {(!user?.cpf || !user?.phone) && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Preencha seus dados para habilitar o pagamento presencial.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="bg-card border border-border rounded-2xl p-4">
           <h2 className="font-semibold text-foreground text-sm mb-3">Aparência</h2>
           <div className="grid grid-cols-3 gap-2">
@@ -180,6 +251,12 @@ export const PerfilView: React.FC = () => {
           Sair da conta
         </button>
       </div>
+
+      <CompleteProfileModal
+        open={showContactModal}
+        onClose={() => setShowContactModal(false)}
+        onSuccess={() => setShowContactModal(false)}
+      />
     </div>
   );
 };

@@ -35,7 +35,12 @@ Obter estatísticas completas do dashboard.
   },
   "revenueToday": {
     "total": 1240.50,
-    "description": "Reservas pagas"
+    "description": "Reservas avulsas pagas hoje"
+  },
+  "recurringPlans": {
+    "activePlans": 12,
+    "pendingThisMonth": 3600.00,
+    "overdueCount": 2
   },
   "openTabs": {
     "total": 3,
@@ -131,16 +136,33 @@ Obter estatísticas completas do dashboard.
 ```
 
 #### 2. Receita Hoje
-- **total**: Soma dos valores (finalAmount) de reservas pagas hoje
-- **description**: "Reservas pagas"
+- **total**: Soma dos `finalAmount` de reservas **avulsas** (`bookingType = AVULSO`) pagas hoje
+- **description**: `"Reservas avulsas pagas hoje"`
+- **Observação**: reservas de mensalistas são excluídas intencionalmente — a receita delas é registrada separadamente pelo card "Mensalistas"
 
 **Query utilizada:**
 ```typescript
-// Busca reservas com date = hoje e paymentStatus = PAID
+// Busca reservas com date = hoje, paymentStatus = PAID e bookingType = AVULSO
 // Soma campo finalAmount
 ```
 
-#### 3. Comandas Abertas
+#### 3. Mensalistas
+Card dedicado ao controle de planos recorrentes.
+
+- **activePlans**: Número de `RecurringBookingPlan` com `status = ACTIVE`
+- **pendingThisMonth**: Soma das faturas (`RecurringPlanPayment`) com `status = PENDING` do mês atual (em R$)
+- **overdueCount**: Número de faturas `PENDING` de meses **anteriores** ao atual (inadimplência)
+
+**Query utilizada:**
+```typescript
+// activePlans: COUNT de RecurringBookingPlan WHERE status = 'ACTIVE'
+// pendingThisMonth: SUM(amount) de RecurringPlanPayment
+//   WHERE status = PENDING AND month = mesAtual AND year = anoAtual
+// overdueCount: COUNT de RecurringPlanPayment
+//   WHERE status = PENDING AND (year < anoAtual OR (year = anoAtual AND month < mesAtual))
+```
+
+#### 4. Comandas Abertas
 - **total**: Número de comandas com status OPEN
 - **totalConsumption**: Soma dos valores totais das comandas abertas
 
@@ -150,7 +172,7 @@ Obter estatísticas completas do dashboard.
 // Conta total e soma campo total (valor da comanda)
 ```
 
-#### 4. Cashback Circulante
+#### 5. Cashback Circulante
 - **total**: Soma de todos os saldos de cashback disponíveis
 - **totalWallets**: Número de carteiras de cashback cadastradas
 
@@ -192,12 +214,13 @@ O endpoint Dashboard utiliza **queries paralelas** com `Promise.all()` para otim
 const [
   bookingsToday,
   revenueToday,
+  recurringStats,
   openTabs,
   cashbackCirculating,
   recentBookings,
   courts,
 ] = await Promise.all([
-  // 6 queries simultâneas
+  // 7 queries simultâneas
 ]);
 ```
 
@@ -214,7 +237,8 @@ Authorization: Bearer {admin_token}
 # Response: Dados completos do dashboard
 # Admin vê:
 # - 0 reservas confirmadas (início do dia)
-# - R$ 0 em receita (ainda não houve pagamentos)
+# - R$ 0 em receita avulsa (ainda não houve pagamentos avulsos hoje)
+# - 12 planos mensalistas ativos, R$ 3600 pendentes este mês, 2 faturas em atraso
 # - 0 comandas abertas
 # - R$ 1580.30 em cashback circulante (42 carteiras)
 ```
@@ -227,7 +251,8 @@ Authorization: Bearer {employee_token}
 
 # Response atualizado com dados do dia:
 # - 8 reservas criadas, 5 confirmadas
-# - R$ 1240.50 em receita de reservas pagas
+# - R$ 1240.50 em receita de reservas avulsas pagas
+# - Mensalistas: 12 ativos, R$ 2400 ainda pendentes, 0 em atraso
 # - 3 comandas abertas com R$ 245.80 em consumo
 # - Lista de últimas reservas para acompanhamento
 ```
