@@ -160,8 +160,8 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
 
   return (
     <Drawer open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DrawerContent className="max-h-[90dvh]">
-        <DrawerHeader className="flex items-center justify-between pr-4">
+      <DrawerContent className="max-h-[88svh] flex flex-col">
+        <DrawerHeader className="flex items-center justify-between pr-4 shrink-0">
           <DrawerTitle className="flex items-center gap-2">
             <Camera size={18} />
             Escanear nota fiscal
@@ -176,9 +176,9 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
           </DrawerClose>
         </DrawerHeader>
 
-        <div className="px-4 flex flex-col items-center gap-5" style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}>
+        <div className="px-4 flex flex-col items-center gap-5 overflow-y-auto" style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}>
           <p className="text-sm text-muted-foreground text-center">
-            Aponte a c�mera para o QR Code da sua nota fiscal para resgatar cashback.
+            Aponte a câmera para o QR Code da sua nota fiscal para resgatar cashback.
           </p>
 
           {permissionError ? (
@@ -200,7 +200,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
               <div
                 id="qr-reader"
                 className="w-full rounded-2xl overflow-hidden"
-                style={{ minHeight: 'min(280px, 45dvh)' }}
+                style={{ minHeight: 'min(240px, 38svh)' }}
               />
               {!isScanning && !permissionError && !isProcessing && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-2xl">
@@ -217,7 +217,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
           )}
 
           <p className="text-xs text-muted-foreground text-center px-4">
-            O QR Code geralmente est� no rodap� da nota fiscal ou cupom eletr�nico.
+            O QR Code geralmente está no rodapé da nota fiscal ou cupom eletrônico.
           </p>
         </div>
       </DrawerContent>
