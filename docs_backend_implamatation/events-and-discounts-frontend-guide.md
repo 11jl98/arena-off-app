@@ -669,3 +669,58 @@ Em plano já criado (nova feature):
 | Atualizar desconto mensalista | Afeta apenas bookings futuros com `paymentStatus = PENDING`; bookings já pagos não são alterados |
 | `bookingType` dos agendamentos | Eventos criam bookings com `bookingType: "EVENTO"` |
 | Dashboard `revenueToday` | Inclui receita de eventos pagos (além de avulsos) |
+| Excluir evento | Hard delete físico — remove evento + slots + bookings + payments + cashback transactions. **Apenas ADMIN.** Uso: evento criado por engano. Para manter histórico, usar cancelamento. |
+
+---
+
+## 7. Excluir Evento (Hard Delete)
+
+Exclui **fisicamente** o evento e todos os registros associados (slots, bookings, payments, cashback transactions).  
+**Não há recuperação.** Use com moderação — para manter o histórico prefira o cancelamento (`POST /events/:id/cancel`).
+
+```
+DELETE /events/:id
+Authorization: Bearer <token>
+Roles: ADMIN
+```
+
+**Request body:** vazio (nenhum)
+
+**Response `200`:**
+
+```typescript
+{
+  message: "Evento excluído permanentemente com sucesso"
+}
+```
+
+**Erros:**
+
+| Status | Motivo |
+|--------|--------|
+| `401` | Não autenticado |
+| `403` | Não é ADMIN |
+| `404` | Evento não encontrado |
+
+### O que é removido
+
+Em ordem dentro de uma transação:
+
+1. Todos os `Payment` vinculados aos bookings do evento
+2. Todas as `CashbackTransaction` vinculadas aos bookings do evento
+3. Todos os `Booking` do evento (e seus `BookingParticipant` via cascade)
+4. Todos os `EventBookingSlot` do evento
+5. O `EventBookingPlan`
+
+### Caso de uso
+
+> Um funcionário criou um evento com os slots errados e percebeu na mesma hora.  
+> Em vez de cancelar (que mantém o registro), o ADMIN pode excluir permanentemente.
+
+### Fluxo sugerido no front
+
+- Exibir botão "Excluir Evento" apenas para usuários com role `ADMIN`
+- Antes de chamar o endpoint, exibir modal de confirmação com aviso:
+  > "Tem certeza? Esta ação excluirá permanentemente o evento, todas as reservas e pagamentos vinculados. Esta ação não pode ser desfeita."
+- Input adicional: digitar "EXCLUIR" para confirmar
+- Após sucesso, redirecionar para a listagem de eventos

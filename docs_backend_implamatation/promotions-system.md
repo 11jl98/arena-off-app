@@ -38,12 +38,23 @@ Desconto especial para a primeira reserva de novos clientes.
 **Configuração:**
 - `discountPercent` ou `discountFixed`: Desconto aplicado
 
-### 4. BIRTHDAY (Aniversário)
-Desconto especial para aniversariantes.
+### 4. DATE_BASED (Promoção por Data / Período)
+Desconto aplicado em uma data específica ou em um período contínuo de datas.
+
+**Exemplos:**
+- 30% de desconto no feriado de 07 de setembro
+- R$ 50 de desconto durante o período de 20/12 a 31/12
 
 **Configuração:**
 - `discountPercent` ou `discountFixed`: Desconto aplicado
-- Sistema verifica automaticamente a data de aniversário do cliente
+- `startDate`: Data inicial da promoção (obrigatório)
+- `endDate`: Data final da promoção (obrigatório)
+- Para uma única data, use `startDate` e `endDate` iguais (ex: ambos `"2026-09-07"`)
+
+**Regras de aplicabilidade:**
+- A reserva deve estar dentro do intervalo `[startDate, endDate]`.
+- Não utiliza `startTime`, `endTime` nem `daysOfWeek` — a elegibilidade é puramente por data.
+- Se o admin preencher `startTime`/`endTime`/`daysOfWeek` em uma promoção `DATE_BASED`, esses campos serão ignorados na verificação de elegibilidade.
 
 ## Pacotes de Horas (Hours Packages)
 
@@ -364,7 +375,49 @@ Content-Type: application/json
 }
 ```
 
-### Exemplo 3: Criar Pacote de Horas
+### Exemplo 3: Criar Promoção por Data (Feriado)
+
+```bash
+# 30% de desconto no feriado de 07 de setembro
+POST /promotions
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "name": "Feriado 7 de Setembro",
+  "description": "30% de desconto no feriado",
+  "type": "DATE_BASED",
+  "discountPercent": 30,
+  "startDate": "2026-09-07",
+  "endDate": "2026-09-07",
+  "maxUsage": 100,
+  "usagePerClient": 1,
+  "active": true
+}
+```
+
+### Exemplo 4: Criar Promoção por Período
+
+```bash
+# R$ 50 de desconto durante todo o mês de dezembro
+POST /promotions
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "name": "Desconto de Dezembro",
+  "description": "R$ 50 de desconto em qualquer reserva de dezembro",
+  "type": "DATE_BASED",
+  "discountFixed": 50,
+  "startDate": "2026-12-01",
+  "endDate": "2026-12-31",
+  "maxUsage": 500,
+  "usagePerClient": 2,
+  "active": true
+}
+```
+
+### Exemplo 5: Criar Pacote de Horas
 
 ```bash
 # Pacote 10 horas com 20% de economia
@@ -425,8 +478,9 @@ Content-Type: application/json
    - Percentual: 0-100%
    - Pode ter `discountPercent` OU `discountFixed`, não ambos
 4. **Datas**: 
-   - `startDate` e `endDate` são opcionais
-   - Se não definidas, promoção não tem limite de data
+   - `startDate` e `endDate` são opcionais para os tipos `SPECIAL_HOURS`, `HOURS_COMBO` e `FIRST_BOOKING`
+   - Para `DATE_BASED`, `startDate` e `endDate` são **obrigatórios**
+   - Se não definidas, a promoção não tem limite de data
 5. **Limites de Uso**:
    - `maxUsage`: Total de vezes que a promoção pode ser usada
    - `usagePerClient`: Vezes que cada cliente pode usar
@@ -438,14 +492,24 @@ O sistema verifica automaticamente:
 
 1. ✅ **Status Ativo**: Promoção deve estar `active: true`
 2. ✅ **Período de Validade**: Data atual entre `startDate` e `endDate`
-3. ✅ **Dia da Semana**: Dia da reserva deve estar em `daysOfWeek`
-4. ✅ **Horário**: Horário da reserva deve estar entre `startTime` e `endTime`
+3. ✅ **Dia da Semana**: Dia da reserva deve estar em `daysOfWeek` (ignorado para `DATE_BASED`)
+4. ✅ **Horário**: Horário da reserva deve estar entre `startTime` e `endTime` (ignorado para `DATE_BASED`)
 5. ✅ **Limites de Uso**: `currentUsage < maxUsage`
 6. ✅ **Requisitos Mínimos**: Para combos, verificar `minHours`
 
 ### Cálculo de Descontos
 
 #### SPECIAL_HOURS
+```javascript
+if (discountPercent) {
+  desconto = precoBase * (discountPercent / 100)
+} else if (discountFixed) {
+  desconto = discountFixed
+}
+precoFinal = precoBase - desconto
+```
+
+#### DATE_BASED
 ```javascript
 if (discountPercent) {
   desconto = precoBase * (discountPercent / 100)
@@ -542,7 +606,7 @@ const booking = await createBooking({
 id              UUID PRIMARY KEY
 name            VARCHAR NOT NULL
 description     TEXT
-type            ENUM('SPECIAL_HOURS', 'HOURS_COMBO', 'FIRST_BOOKING', 'BIRTHDAY')
+type            ENUM('SPECIAL_HOURS', 'HOURS_COMBO', 'FIRST_BOOKING', 'DATE_BASED')
 
 -- Condições
 minHours        INTEGER

@@ -6,8 +6,8 @@ import { visualizer } from 'rollup-plugin-visualizer';
 
 const API_PROXY_TARGET = process.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-const certPath = './cert/192.168.15.5.pem';
-const keyPath = './cert/192.168.15.5-key.pem';
+const certPath = './cert/192.168.15.9.pem';
+const keyPath = './cert/192.168.15.9-key.pem';
 const hasLocalCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
 // https://vite.dev/config/

@@ -51,6 +51,30 @@ Usar **antes** de criar a reserva para exibir as opções ao cliente.
 
 > Se retornar array vazio `[]`, não há promoções disponíveis para esse horário/data.
 
+### Promoção por Data (`DATE_BASED`)
+
+Promoções do tipo `DATE_BASED` são elegíveis puramente pela data da reserva, independentemente do horário ou dia da semana.
+
+**Exemplo — 30% de desconto no feriado de 07/09:**
+
+```json
+{
+  "promotion": {
+    "id": "uuid-promocao-feriado",
+    "name": "Feriado 7 de Setembro",
+    "type": "DATE_BASED",
+    "discountPercent": 30,
+    "startDate": "2026-09-07",
+    "endDate": "2026-09-07"
+  },
+  "originalPrice": 200.00,
+  "discountAmount": 60.00,
+  "finalPrice": 140.00
+}
+```
+
+> Para datas fora de `startDate`/`endDate`, a promoção não aparece no resultado de `check-all`.
+
 ---
 
 ### 2. Criar reserva com promoção escolhida
