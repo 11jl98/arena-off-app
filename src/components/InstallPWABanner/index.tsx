@@ -11,6 +11,15 @@ import {
 
 type BannerMode = 'native' | 'ios-manual' | null;
 
+let deferredPromptGlobal: BeforeInstallPromptEvent | null = null;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', ((e: BeforeInstallPromptEvent) => {
+    e.preventDefault();
+    deferredPromptGlobal = e;
+  }) as EventListener);
+}
+
 export function InstallPWABanner() {
   const [dismissed, setDismissed] = useState(() => {
     return localStorage.getItem('pwa-banner-dismissed') === 'true';
@@ -22,11 +31,16 @@ export function InstallPWABanner() {
   const { isStandalone, isIOS } = useDeviceDetection();
 
   useEffect(() => {
+    if (deferredPromptGlobal) {
+      deferredPromptRef.current = deferredPromptGlobal;
+      setMode('native');
+    }
+
     const handler = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
       deferredPromptRef.current = e;
+      deferredPromptGlobal = e;
       setMode('native');
-      console.log('InstallPWABanner: beforeinstallprompt fired');
     };
 
     window.addEventListener('beforeinstallprompt', handler as EventListener);
@@ -34,20 +48,14 @@ export function InstallPWABanner() {
     const onInstalled = () => {
       setMode(null);
       deferredPromptRef.current = null;
+      deferredPromptGlobal = null;
     };
     window.addEventListener('appinstalled', onInstalled);
 
-    if (isIOS && !isStandalone && !dismissed) {
+    if (isIOS && !isStandalone && !dismissed && !deferredPromptGlobal) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setMode('ios-manual');
     }
-
-    console.log('InstallPWABanner: init', {
-      isStandalone,
-      isIOS,
-      dismissed,
-      hasBeforeInstallPrompt: 'onbeforeinstallprompt' in window,
-    });
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler as EventListener);

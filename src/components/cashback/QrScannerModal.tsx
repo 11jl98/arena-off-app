@@ -160,7 +160,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
 
   return (
     <Drawer open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DrawerContent className="max-h-[88svh] flex flex-col">
+      <DrawerContent className="max-h-[90dvh] flex flex-col">
         <DrawerHeader className="flex items-center justify-between pr-4 shrink-0">
           <DrawerTitle className="flex items-center gap-2">
             <Camera size={18} />
@@ -176,7 +176,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
           </DrawerClose>
         </DrawerHeader>
 
-        <div className="px-4 flex flex-col items-center gap-5 overflow-y-auto" style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}>
+        <div className="px-4 flex flex-col items-center gap-5 overflow-y-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <p className="text-sm text-muted-foreground text-center">
             Aponte a câmera para o QR Code da sua nota fiscal para resgatar cashback.
           </p>
@@ -200,7 +200,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
               <div
                 id="qr-reader"
                 className="w-full rounded-2xl overflow-hidden"
-                style={{ minHeight: 'min(240px, 38svh)' }}
+                style={{ minHeight: 'min(200px, 30dvh)' }}
               />
               {!isScanning && !permissionError && !isProcessing && (
                 <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-2xl">

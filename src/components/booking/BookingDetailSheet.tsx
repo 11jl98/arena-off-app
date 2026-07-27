@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format, parseISO, addHours, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,27 +11,9 @@ import {
   AlertTriangle,
   Loader2,
   Ban,
-  Hourglass,
   Lock,
+  MessageCircle,
 } from 'lucide-react';
-
-function useCountdown(expiresAt: string | null | undefined): string | null {
-  const [display, setDisplay] = useState<string | null>(null);
-  useEffect(() => {
-    if (!expiresAt) { setDisplay(null); return; }
-    const tick = () => {
-      const diff = new Date(expiresAt).getTime() - Date.now();
-      if (diff <= 0) { setDisplay(null); return; }
-      const m = Math.floor(diff / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setDisplay(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [expiresAt]);
-  return display;
-}
 import {
   Drawer,
   DrawerContent,
@@ -42,6 +24,7 @@ import {
 import { BookingStatusBadge } from '@/components/booking/BookingStatusBadge';
 import { BookingsService } from '@/services/bookings';
 import { useNotify } from '@/hooks/useNotify';
+import { ARENA_CONTACT } from '@/utils/constants/app.constant';
 import { cn } from '@/lib/utils';
 const fmt = (reais: number) =>
   reais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -70,13 +53,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
     queryFn: () => BookingsService.getBooking(bookingId!),
     enabled: !!bookingId,
     staleTime: 0,
-    refetchInterval: (query) =>
-      query.state.data?.status === 'PENDING' ? 10_000 : false,
   });
-
-  const countdown = useCountdown(
-    booking?.status === 'PENDING' ? booking.pendingExpiresAt : null
-  );
 
   const { mutate: cancelBooking, isPending: cancelling } = useMutation({
     mutationFn: () => BookingsService.cancelBooking(bookingId!),
@@ -99,15 +76,13 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
     },
   });
 
-  const isCancellableStatus =
-    booking?.status === 'PENDING' || booking?.status === 'CONFIRMED';
+  const isCancellableStatus = booking?.status === 'CONFIRMED';
 
   const isPaidPix =
     booking?.paymentStatus === 'PAID' &&
     booking?.paymentMethod === 'MERCADO_PAGO';
 
   const isPendingUnpaid =
-    booking?.status === 'PENDING' &&
     booking?.paymentMethod === 'MERCADO_PAGO' &&
     booking?.paymentStatus === 'PENDING';
 
@@ -116,7 +91,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
     if (isPendingUnpaid) return true;
     const dateOnly = booking.date.substring(0, 10);
     const bookingStart = new Date(`${dateOnly}T${booking.startTime}:00`);
-    return isBefore(addHours(new Date(), 2), bookingStart);
+    return isBefore(addHours(new Date(), ARENA_CONTACT.CANCELLATION_HOURS), bookingStart);
   })();
 
   const canCancel = isCancellableStatus && isCancellableByTime && !isPaidPix;
@@ -154,21 +129,6 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                 </div>
                 <BookingStatusBadge status={booking.status} />
               </div>
-
-              {booking.status === 'PENDING' && (
-                <div className={`flex items-center gap-2 rounded-xl px-3 py-2.5 border text-sm ${
-                  countdown
-                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300'
-                    : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400'
-                }`}>
-                  <Hourglass size={15} className="shrink-0" />
-                  <span className="font-medium">
-                    {countdown
-                      ? `Aguardando confirmação — expira em ${countdown}`
-                      : 'Aguardando confirmação do administrador'}
-                  </span>
-                </div>
-              )}
 
               <div className="bg-muted/50 rounded-2xl p-4 grid grid-cols-2 gap-4 text-sm">
                 <div className="flex flex-col gap-0.5">
@@ -269,28 +229,51 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
 
               {isCancellableStatus && !isCancellableByTime && (
                 <div className="pt-2">
-                  <div className="flex items-start gap-2 bg-muted/60 border border-border rounded-2xl p-4">
-                    <Ban size={16} className="text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="flex flex-col gap-0.5">
-                      <p className="text-sm font-medium text-foreground">Cancelamento indisponível</p>
-                      <p className="text-xs text-muted-foreground">
-                        O prazo para cancelamento expirou. Reservas só podem ser canceladas com pelo menos 2 horas de antecedência.
-                      </p>
+                  <div className="flex flex-col gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
+                    <div className="flex items-start gap-2">
+                      <Ban size={16} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Cancelamento indisponível</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                          O prazo para cancelamento online expirou. Reservas só podem ser canceladas com pelo menos <b>{ARENA_CONTACT.CANCELLATION_HOURS}h</b> de antecedência.
+                          Em caso de necessidade entre em contato:
+                        </p>
+                      </div>
                     </div>
+                    <a
+                      href={ARENA_CONTACT.WHATSAPP_LINK}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors active:scale-[0.98]"
+                    >
+                      <MessageCircle size={16} />
+                      Falar no WhatsApp
+                    </a>
                   </div>
                 </div>
               )}
 
               {isCancellableStatus && isPaidPix && (
                 <div className="pt-2">
-                  <div className="flex items-start gap-2 bg-muted/60 border border-border rounded-2xl p-4">
-                    <Lock size={16} className="text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="flex flex-col gap-0.5">
-                      <p className="text-sm font-medium text-foreground">Cancelamento bloqueado</p>
-                      <p className="text-xs text-muted-foreground">
-                        Reservas pagas via PIX não podem ser canceladas pelo app. Entre em contato com a recepção para solicitar o cancelamento e reembolso.
-                      </p>
+                  <div className="flex flex-col gap-3 bg-muted/60 border border-border rounded-2xl p-4">
+                    <div className="flex items-start gap-2">
+                      <Lock size={16} className="text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-sm font-medium text-foreground">Cancelamento bloqueado</p>
+                        <p className="text-xs text-muted-foreground">
+                          Reservas pagas via PIX não podem ser canceladas pelo app. Entre em contato conosco para solicitar o cancelamento e reembolso.
+                        </p>
+                      </div>
                     </div>
+                    <a
+                      href={ARENA_CONTACT.WHATSAPP_LINK}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors active:scale-[0.98]"
+                    >
+                      <MessageCircle size={16} />
+                      Falar no WhatsApp
+                    </a>
                   </div>
                 </div>
               )}

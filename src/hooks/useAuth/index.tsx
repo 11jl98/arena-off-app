@@ -25,11 +25,21 @@ export const useAuth = () => {
     const loginWithGoogle = useCallback(async () => {
         try {
             setIsChecking(true);
-            const response = await AuthService.signInWithGoogle();
+            await AuthService.signInWithGoogle();
 
+            const profile = await AuthService.getProfile();
             const mappedUser = {
-                ...response.user,
-                photoURL: response.user.avatarUrl,
+                id: profile.id,
+                email: profile.email,
+                name: profile.name,
+                role: profile.role,
+                avatarUrl: profile.avatarUrl,
+                photoURL: profile.avatarUrl,
+                isBlocked: profile.blocked,
+                clientProfile: profile.clientProfile,
+                cpf: profile.clientProfile?.cpf ?? null,
+                phone: profile.clientProfile?.phone ?? null,
+                createdAt: profile.createdAt,
             };
 
             setUser(mappedUser);

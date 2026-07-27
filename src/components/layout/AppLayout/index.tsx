@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CalendarDays, Wallet, User, Menu, X } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { InstallPWABanner } from '@/components/InstallPWABanner';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useNotifications } from '@/hooks/useNotifications';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
@@ -60,6 +61,8 @@ export const AppLayout: React.FC = () => {
     return (
       <div className="flex flex-col h-dvh w-full bg-background overflow-hidden"
       >
+        <InstallPWABanner />
+
         <header
           className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 bg-linear-to-r from-primary to-orange-600"
           style={{
@@ -138,7 +141,10 @@ export const AppLayout: React.FC = () => {
 
         <main
           className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
-          style={{ paddingTop: 'calc(3rem + env(safe-area-inset-top))' }}
+          style={{
+            paddingTop: 'calc(3rem + env(safe-area-inset-top))',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}
         >
           <Outlet />
         </main>

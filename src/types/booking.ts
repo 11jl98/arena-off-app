@@ -38,7 +38,7 @@ export interface Booking {
   updatedAt: string;
   confirmedAt?: string;
   cancelledAt?: string;
-  /** Present only when status === 'PENDING' — 30-min expiry window */
+  /** @deprecated Auto-confirm migration — always null. Removed in future API version. */
   pendingExpiresAt?: string;
   /** Mercado Pago order ID — set when payment is initiated */
   mpOrderId?: string;

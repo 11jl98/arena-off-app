@@ -28,6 +28,7 @@ import { PaymentsService } from '@/services/payments';
 import { useUserStore } from '@/store/userStore';
 import { useNotify } from '@/hooks/useNotify';
 import { cn } from '@/lib/utils';
+import { getDurationInHours, formatDuration } from '@/utils/helpers/time.helper';
 import type { AppliedPromotion } from '@/types/promotion';
 import type { PaymentMethod } from '@/types/booking';
 import { CompleteProfileModal } from '@/components/booking/CompleteProfileModal';
@@ -98,7 +99,7 @@ export const Step3Checkout: React.FC = () => {
   const dateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   const startTime = selectedSlots[0]?.startTime ?? '';
   const endTime = selectedSlots[selectedSlots.length - 1]?.endTime ?? '';
-  const hours = selectedSlots.length || 1;
+  const hours = getDurationInHours(selectedSlots) || 1;
 
   const basePriceReais = (selectedCourt?.pricePerHour ?? 0) * hours;
 
@@ -251,7 +252,7 @@ export const Step3Checkout: React.FC = () => {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock size={14} className="text-primary shrink-0" />
           <span>
-            {startTime} – {endTime} ({hours}h)
+            {startTime} – {endTime} ({formatDuration(hours)})
           </span>
         </div>
         {selectedSport && (
@@ -428,7 +429,7 @@ export const Step3Checkout: React.FC = () => {
 
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">
-            Valor base ({hours}h × {fmt(selectedCourt?.pricePerHour ?? 0)})
+            Valor base ({formatDuration(hours)} × {fmt(selectedCourt?.pricePerHour ?? 0)})
           </span>
           <span>{fmt(basePriceReais)}</span>
         </div>

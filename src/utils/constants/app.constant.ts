@@ -17,3 +17,9 @@ export const STORAGE_KEYS = {
   USER: 'user',
   THEME: 'theme',
 } as const;
+
+export const ARENA_CONTACT = {
+  WHATSAPP_NUMBER: '553138741619',
+  WHATSAPP_LINK: 'https://wa.me/553138741619',
+  CANCELLATION_HOURS: 6,
+} as const;

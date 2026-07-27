@@ -1,10 +1,13 @@
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, addDays, isSameDay, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Loader2, ChevronRight, Sunrise, Sun, Moon, Clock } from 'lucide-react';
+import { Loader2, ChevronRight, Sunrise, Sun, Moon, Clock, Info } from 'lucide-react';
 import { BookingsService } from '@/services/bookings';
+import { ArenaService } from '@/services/arena';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
 import { cn } from '@/lib/utils';
+import { getDurationInHours, formatDuration } from '@/utils/helpers/time.helper';
 import type { AvailableSlot } from '@/types/booking';
 
 const DAY_ABBRS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as const;
@@ -15,13 +18,24 @@ const PERIODS = [
   { label: 'Noite', Icon: Moon, from: 18, to: 24 },
 ] as const;
 
+function isSlotInPast(slot: AvailableSlot, selectedDate: Date | null): boolean {
+  if (!selectedDate || !isToday(selectedDate)) return false;
+  const now = new Date();
+  const [h, m] = slot.startTime.split(':').map(Number);
+  const slotStart = new Date(selectedDate);
+  slotStart.setHours(h, m, 0, 0);
+  return now >= slotStart;
+}
+
 function handleSlotClick(
   slot: AvailableSlot,
   allSlots: AvailableSlot[],
   selectedSlots: AvailableSlot[],
-  setSelectedSlots: (slots: AvailableSlot[]) => void
+  setSelectedSlots: (slots: AvailableSlot[]) => void,
+  selectedDate: Date | null,
 ) {
   if (!slot.available) return;
+  if (isSlotInPast(slot, selectedDate)) return;
 
   if (selectedSlots.length === 0) {
     setSelectedSlots([slot]);
@@ -47,7 +61,7 @@ function handleSlotClick(
 }
 
 export const Step2DateTime: React.FC = () => {
-  const { selectedCourt, selectedDate, selectedSlots, setSelectedSlots, selectDate, goNext } =
+  const { selectedCourt, selectedDate, selectedSlots, setSelectedSlots, setSlotDuration, selectDate, goNext } =
     useBookingFlow();
 
   const today = new Date();
@@ -55,6 +69,28 @@ export const Step2DateTime: React.FC = () => {
 
   const days = Array.from({ length: 30 }, (_, i) => addDays(today, i));
   const dateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
+
+  const { data: settings } = useQuery({
+    queryKey: ['arena-settings'],
+    queryFn: () => ArenaService.getSettings(),
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const slotDuration = settings?.slotDurationMinutes ?? 60;
+
+  useEffect(() => {
+    if (slotDuration) {
+      setSlotDuration(slotDuration);
+    }
+  }, [slotDuration, setSlotDuration]);
+
+  useEffect(() => {
+    if (selectedSlots.some((s) => isSlotInPast(s, selectedDate))) {
+      setSelectedSlots([]);
+    }
+  }, [selectedDate, selectedSlots, setSelectedSlots]);
 
   const { data: slots = [], isLoading: loadingSlots } = useQuery({
     queryKey: ['slots', selectedCourt?.id, dateStr],
@@ -69,6 +105,12 @@ export const Step2DateTime: React.FC = () => {
   });
 
   const allSlots = slots as AvailableSlot[];
+
+  const hasPastSlots = useMemo(
+    () => allSlots.some((s) => s.available && isSlotInPast(s, selectedDate)),
+    [allSlots, selectedDate],
+  );
+
   const canProceed = !!selectedDate && selectedSlots.length > 0;
 
   const lastSlot = selectedSlots[selectedSlots.length - 1];
@@ -127,7 +169,7 @@ export const Step2DateTime: React.FC = () => {
         <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3.5 py-2.5">
           <Clock size={14} className="text-primary shrink-0" />
           <span className="text-sm font-semibold text-primary">
-            {selectedSlots[0].startTime} → {lastSlot.endTime} · {selectedSlots.length}h
+            {selectedSlots[0].startTime} → {lastSlot.endTime} · {formatDuration(getDurationInHours(selectedSlots))}
           </span>
           <span className="ml-auto text-xs text-primary/60">
             {selectedSlots.length === 1 ? 'Selecione mais para estender' : ''}
@@ -149,6 +191,15 @@ export const Step2DateTime: React.FC = () => {
               {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
             </span>
           </div>
+
+          {hasPastSlots && (
+            <div className="flex items-start gap-2 bg-muted/50 border border-border rounded-xl px-3 py-2">
+              <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground">
+                Horários anteriores ao horário atual não estão disponíveis para reserva.
+              </p>
+            </div>
+          )}
 
           {selectedSlots.length === 0 && (
             <p className="text-xs text-muted-foreground">
@@ -189,33 +240,41 @@ export const Step2DateTime: React.FC = () => {
                       return (
                         <button
                           key={slot.startTime}
-                          disabled={!slot.available}
+                          disabled={!slot.available || isSlotInPast(slot, selectedDate)}
                           onClick={() =>
-                            handleSlotClick(slot, allSlots, selectedSlots, setSelectedSlots)
+                            handleSlotClick(slot, allSlots, selectedSlots, setSelectedSlots, selectedDate)
                           }
                           className={cn(
                             'flex flex-col items-center justify-center py-3 px-2 rounded-xl border font-semibold transition-all duration-150',
-                            slot.available
-                              ? isSelected
-                                ? isFirst || isLast
-                                  ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                                  : 'bg-primary/70 text-primary-foreground border-primary/50'
-                                : 'bg-card border-border text-foreground active:scale-95'
-                              : 'bg-muted border-muted text-muted-foreground/40 cursor-not-allowed'
+                            isSlotInPast(slot, selectedDate)
+                              ? 'bg-muted/30 border-transparent text-muted-foreground/30 cursor-not-allowed'
+                              : slot.available
+                                ? isSelected
+                                  ? isFirst || isLast
+                                    ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                                    : 'bg-primary/70 text-primary-foreground border-primary/50'
+                                  : 'bg-card border-border text-foreground active:scale-95'
+                                : 'bg-muted border-muted text-muted-foreground/40 cursor-not-allowed'
                           )}
                         >
                           <span className="text-sm tabular-nums">{slot.startTime}</span>
                           <span
                             className={cn(
                               'text-[10px] font-normal mt-0.5',
-                              isSelected
-                                ? 'text-primary-foreground/70'
-                                : slot.available
-                                  ? 'text-muted-foreground'
-                                  : 'text-muted-foreground/40'
+                              isSlotInPast(slot, selectedDate)
+                                ? 'text-muted-foreground/30'
+                                : isSelected
+                                  ? 'text-primary-foreground/70'
+                                  : slot.available
+                                    ? 'text-muted-foreground'
+                                    : 'text-muted-foreground/40'
                             )}
                           >
-                            {slot.available ? `até ${slot.endTime}` : 'Ocupado'}
+                            {isSlotInPast(slot, selectedDate)
+                              ? 'Encerrado'
+                              : slot.available
+                                ? `até ${slot.endTime}`
+                                : 'Ocupado'}
                           </span>
                         </button>
                       );

@@ -11,10 +11,10 @@ interface BookingFlowState {
   selectedDate: Date | null;
   selectedSlots: AvailableSlot[];
   selectedSport: Sport | null;
+  slotDuration: number;
   cashbackAmount: number;
   paymentMethod: PaymentMethod;
   createdBooking: Booking | null;
-  pendingExpiresAt: string | null;
   pixPaymentData: InitiatePixPaymentResponse | null;
 }
 
@@ -23,6 +23,7 @@ interface BookingFlowActions {
   selectCourt: (court: Court) => void;
   selectDate: (date: Date) => void;
   setSelectedSlots: (slots: AvailableSlot[]) => void;
+  setSlotDuration: (duration: number) => void;
   setSport: (sport: Sport) => void;
   setCashbackAmount: (amount: number) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
@@ -42,10 +43,10 @@ const initialState: BookingFlowState = {
   selectedDate: null,
   selectedSlots: [],
   selectedSport: null,
+  slotDuration: 60,
   cashbackAmount: 0,
   paymentMethod: 'PRESENCIAL',
   createdBooking: null,
-  pendingExpiresAt: null,
   pixPaymentData: null,
 };
 
@@ -63,19 +64,18 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
     selectCourt: (court) => update({ selectedCourt: court, selectedSlots: [], step: 2 }),
     selectDate: (date) => update({ selectedDate: date, selectedSlots: [] }),
     setSelectedSlots: (slots) => update({ selectedSlots: slots }),
+    setSlotDuration: (duration) => update({ slotDuration: duration }),
     setSport: (sport) => update({ selectedSport: sport }),
     setCashbackAmount: (cashbackAmount) => update({ cashbackAmount }),
     setPaymentMethod: (paymentMethod) => update({ paymentMethod }),
     setCreatedBooking: (booking) =>
       update({
         createdBooking: booking,
-        pendingExpiresAt: booking.pendingExpiresAt ?? null,
         step: 4,
       }),
     updateCreatedBooking: (booking) =>
       update({
         createdBooking: booking,
-        pendingExpiresAt: booking.pendingExpiresAt ?? null,
       }),
     setPixPaymentData: (pixPaymentData) => update({ pixPaymentData }),
     goNext: () =>

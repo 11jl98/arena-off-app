@@ -73,10 +73,6 @@ const HistoryTab: React.FC = () => {
     queryKey: ['my-bookings'],
     queryFn: () => BookingsService.listMyBookings({ pageSize: 50 }),
     staleTime: 15_000,
-    refetchInterval: (query) => {
-      const bookings = query.state.data ?? [];
-      return bookings.some((b) => b.status === 'PENDING') ? 15_000 : false;
-    },
   });
 
   const bookings = data ?? [];
