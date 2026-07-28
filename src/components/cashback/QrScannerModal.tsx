@@ -11,29 +11,39 @@ import {
 } from '@/components/ui/drawer';
 import { CashbackService } from '@/services/cashback';
 import { useNotify } from '@/hooks/useNotify';
-import type { CashbackWallet } from '@/types/cashback';
+import { QrPurposeSelector } from './QrPurposeSelector';
+import { QrSuccessScreen } from './QrSuccessScreen';
+import type { CashbackWallet, CashbackPurpose } from '@/types/cashback';
 
 interface QrScannerModalProps {
   open: boolean;
   onClose: () => void;
+  barEnabled: boolean;
+  cashbackEnabled: boolean;
 }
+
+type Step = 'SCAN' | 'PURPOSE_SELECT' | 'SUCCESS';
 
 const isNfceUrl = (text: string) =>
   /nfce|nfceweb|sefaz|fazenda\.gov/i.test(text);
 
-export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose }) => {
+export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, barEnabled }) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scanningRef = useRef(false);
   const scannedRef = useRef(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [step, setStep] = useState<Step>('SCAN');
+  const [scannedData, setScannedData] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<{ cashbackEarned: number; totalAmount: number; purpose: CashbackPurpose } | null>(null);
   const queryClient = useQueryClient();
-  const { success: showSuccess, error: showError } = useNotify();
+  const {  error: showError } = useNotify();
 
-  const { mutate: submitReceipt } = useMutation({
-    mutationFn: (receiptData: string) =>
-      CashbackService.scanQrReceipt({ receiptData }),
+
+  const { mutate: submitReceipt, isPending } = useMutation({
+    mutationFn: (payload: { receiptData: string; purpose: CashbackPurpose }) =>
+      CashbackService.scanQrReceipt(payload),
     onSuccess: (data) => {
       queryClient.setQueriesData<CashbackWallet>(
         { queryKey: ['cashback-wallet'] },
@@ -42,24 +52,35 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
             ? {
                 ...old,
                 balance: old.balance + data.cashbackEarned,
+                courtBalance:
+                  data.purpose === 'COURT'
+                    ? old.courtBalance + data.cashbackEarned
+                    : old.courtBalance,
+                barBalance:
+                  data.purpose === 'BAR'
+                    ? old.barBalance + data.cashbackEarned
+                    : old.barBalance,
                 totalEarned: old.totalEarned + data.cashbackEarned,
               }
             : old
       );
       queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['cashback-transactions'] });
-      const earned = data.cashbackEarned.toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
+
+      setScanResult({
+        cashbackEarned: data.cashbackEarned,
+        totalAmount: data.totalAmount,
+        purpose: data.purpose,
       });
-      showSuccess(`Cashback de ${earned} adicionado � sua carteira! ??`);
-      handleClose();
+      setIsProcessing(false);
+      setStep('SUCCESS');
     },
     onError: (err: Error) => {
       showError(err.message || 'Erro ao processar a nota. Tente novamente.');
       scannedRef.current = false;
       setIsProcessing(false);
-      onClose();
+      setStep('SCAN');
+      startScanner();
     },
   });
 
@@ -69,7 +90,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
       setIsScanning(false);
       try {
         await scannerRef.current.stop();
-        scannerRef.current.clear();
+        await scannerRef.current.clear();
       } catch { /* empty */ }
     }
   };
@@ -79,7 +100,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
     if (!document.getElementById(elementId)) return;
 
     if (scannerRef.current) {
-      try { scannerRef.current.clear(); } catch { /* empty */ }
+      try { await scannerRef.current.clear(); } catch { /* empty */ }
       scannerRef.current = null;
     }
 
@@ -91,14 +112,21 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
         if (scannedRef.current) return;
 
         if (!isNfceUrl(decodedText)) {
-          showError('QR Code n�o reconhecido como nota fiscal. Aponte para o QR da NFCe.');
+          showError('QR Code não reconhecido como nota fiscal. Aponte para o QR da NFC-e.');
           return;
         }
 
         scannedRef.current = true;
-        setIsProcessing(true);
-        stopScanner();
-        submitReceipt(decodedText);
+        setScannedData(decodedText);
+
+        if (!barEnabled) {
+          setIsProcessing(true);
+          stopScanner();
+          submitReceipt({ receiptData: decodedText, purpose: 'COURT' });
+        } else {
+          stopScanner();
+          setStep('PURPOSE_SELECT');
+        }
       };
 
       const scanConfig = {
@@ -107,7 +135,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
         videoConstraints: {
           facingMode: { ideal: 'environment' },
           width: { ideal: 1280 },
-          height: { ideal: 720 },
+          height: { ideal: 980 },
         } as MediaTrackConstraints,
       };
 
@@ -131,11 +159,11 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
       setIsScanning(true);
       setPermissionError(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao acessar c�mera';
+      const message = err instanceof Error ? err.message : 'Erro ao acessar câmera';
       setPermissionError(
         message.toLowerCase().includes('permission')
-          ? 'C�mera negada. Permita o acesso � c�mera nas configura��es do navegador.'
-          : 'N�o foi poss�vel iniciar a c�mera: ' + message
+          ? 'Câmera negada. Permita o acesso à câmera nas configurações do navegador.'
+          : 'Não foi possível iniciar a câmera: ' + message
       );
     }
   };
@@ -143,9 +171,11 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
   useEffect(() => {
     if (open) {
       scannedRef.current = false;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsProcessing(false);
       setPermissionError(null);
+      setStep('SCAN');
+      setScannedData(null);
+      setScanResult(null);
       const timer = setTimeout(() => startScanner(), 500);
       return () => clearTimeout(timer);
     } else {
@@ -155,8 +185,19 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
 
   const handleClose = () => {
     stopScanner();
+    setStep('SCAN');
+    setScannedData(null);
+    setScanResult(null);
     onClose();
   };
+
+  const handlePurposeConfirm = (purpose: CashbackPurpose) => {
+    if (!scannedData) return;
+    setIsProcessing(true);
+    submitReceipt({ receiptData: scannedData, purpose });
+  };
+
+  const walletData = queryClient.getQueryData<CashbackWallet>(['cashback-wallet']);
 
   return (
     <Drawer open={open} onOpenChange={(v) => !v && handleClose()}>
@@ -164,7 +205,9 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
         <DrawerHeader className="flex items-center justify-between pr-4 shrink-0">
           <DrawerTitle className="flex items-center gap-2">
             <Camera size={18} />
-            Escanear nota fiscal
+            {step === 'SCAN' && 'Escanear nota fiscal'}
+            {step === 'PURPOSE_SELECT' && 'Escolher destino'}
+            {step === 'SUCCESS' && 'Concluído'}
           </DrawerTitle>
           <DrawerClose asChild>
             <button
@@ -176,49 +219,75 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose })
           </DrawerClose>
         </DrawerHeader>
 
-        <div className="px-4 flex flex-col items-center gap-5 overflow-y-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <p className="text-sm text-muted-foreground text-center">
-            Aponte a câmera para o QR Code da sua nota fiscal para resgatar cashback.
-          </p>
+        <div key={step} className="px-4 flex flex-col items-center gap-5 overflow-y-auto flex-1 min-h-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          {step === 'SCAN' && (
+            <>
+              <p className="text-sm text-muted-foreground text-center">
+                Aponte a câmera para o QR Code da sua nota fiscal para resgatar cashback.
+              </p>
 
-          {permissionError ? (
-            <div className="flex flex-col items-center gap-3 text-center">
-              <AlertCircle size={40} className="text-destructive" />
-              <p className="text-sm text-destructive">{permissionError}</p>
-              <button
-                onClick={() => {
-                  setPermissionError(null);
-                  startScanner();
-                }}
-                className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          ) : (
-            <div className="w-full relative">
-              <div
-                id="qr-reader"
-                className="w-full rounded-2xl overflow-hidden"
-                style={{ minHeight: 'min(200px, 30dvh)' }}
-              />
-              {!isScanning && !permissionError && !isProcessing && (
-                <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-2xl">
-                  <Loader2 size={28} className="animate-spin text-primary" />
+              {permissionError ? (
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <AlertCircle size={40} className="text-destructive" />
+                  <p className="text-sm text-destructive">{permissionError}</p>
+                  <button
+                    onClick={() => {
+                      setPermissionError(null);
+                      startScanner();
+                    }}
+                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full relative">
+                  <div
+                    id="qr-reader"
+                    className="w-full rounded-2xl overflow-hidden"
+                    style={{ minHeight: 'min(200px, 30dvh)' }}
+                  />
+                  {!isScanning && !permissionError && !isProcessing && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-2xl">
+                      <Loader2 size={28} className="animate-spin text-primary" />
+                    </div>
+                  )}
+                  {isProcessing && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-2xl gap-3">
+                      <Loader2 size={32} className="animate-spin text-white" />
+                      <p className="text-white text-sm">Processando nota...</p>
+                    </div>
+                  )}
                 </div>
               )}
-              {isProcessing && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-2xl gap-3">
-                  <Loader2 size={32} className="animate-spin text-white" />
-                  <p className="text-white text-sm">Processando nota...</p>
-                </div>
-              )}
-            </div>
+
+              <p className="text-xs text-muted-foreground text-center px-4">
+                O QR Code geralmente está no rodapé da nota fiscal ou cupom eletrônico.
+              </p>
+            </>
           )}
 
-          <p className="text-xs text-muted-foreground text-center px-4">
-            O QR Code geralmente está no rodapé da nota fiscal ou cupom eletrônico.
-          </p>
+          {step === 'PURPOSE_SELECT' && (
+            <QrPurposeSelector
+              onConfirm={handlePurposeConfirm}
+              onCancel={() => {
+                scannedRef.current = false;
+                setStep('SCAN');
+                startScanner();
+              }}
+              loading={isPending}
+            />
+          )}
+
+          {step === 'SUCCESS' && (
+            <QrSuccessScreen
+              cashbackEarned={scanResult?.cashbackEarned ?? 0}
+              purpose={scanResult?.purpose ?? 'COURT'}
+              courtBalance={(walletData?.courtBalance ?? 0) + (scanResult?.purpose === 'COURT' ? scanResult?.cashbackEarned ?? 0 : 0)}
+              barBalance={(walletData?.barBalance ?? 0) + (scanResult?.purpose === 'BAR' ? scanResult?.cashbackEarned ?? 0 : 0)}
+              onClose={handleClose}
+            />
+          )}
         </div>
       </DrawerContent>
     </Drawer>

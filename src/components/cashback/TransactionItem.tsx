@@ -8,7 +8,7 @@ import {
   RefreshCcw,
   Clock,
 } from 'lucide-react';
-import type { CashbackTransaction, CashbackTransactionType } from '@/types/cashback';
+import type { CashbackTransaction, CashbackTransactionType, CashbackPurpose } from '@/types/cashback';
 import { cn } from '@/lib/utils';
 
 const TYPE_CONFIG: Record<
@@ -21,6 +21,11 @@ const TYPE_CONFIG: Record<
   USED_BOOKING: { label: 'Usado em reserva', icon: CalendarDays, earned: false },
   REFUND: { label: 'Estorno', icon: RefreshCcw, earned: true },
   EXPIRATION: { label: 'Expirado', icon: Clock, earned: false },
+};
+
+const PURPOSE_LABEL: Record<CashbackPurpose, string> = {
+  COURT: 'Quadra',
+  BAR: 'Bar',
 };
 
 const fmt = (reais: number) =>
@@ -55,7 +60,14 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{config.label}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium text-foreground truncate">{config.label}</p>
+          {transaction.purpose && (
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground shrink-0">
+              {PURPOSE_LABEL[transaction.purpose]}
+            </span>
+          )}
+        </div>
         {transaction.description && (
           <p className="text-xs text-muted-foreground truncate">{transaction.description}</p>
         )}

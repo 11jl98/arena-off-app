@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, addDays, isSameDay, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -80,8 +80,10 @@ export const Step2DateTime: React.FC = () => {
 
   const slotDuration = settings?.slotDurationMinutes ?? 60;
 
+  const slotDurationSynced = useRef(false);
   useEffect(() => {
-    if (slotDuration) {
+    if (slotDuration && !slotDurationSynced.current) {
+      slotDurationSynced.current = true;
       setSlotDuration(slotDuration);
     }
   }, [slotDuration, setSlotDuration]);
@@ -90,7 +92,7 @@ export const Step2DateTime: React.FC = () => {
     if (selectedSlots.some((s) => isSlotInPast(s, selectedDate))) {
       setSelectedSlots([]);
     }
-  }, [selectedDate, selectedSlots, setSelectedSlots]);
+  }, [selectedDate, selectedSlots]);
 
   const { data: slots = [], isLoading: loadingSlots } = useQuery({
     queryKey: ['slots', selectedCourt?.id, dateStr],
@@ -257,10 +259,10 @@ export const Step2DateTime: React.FC = () => {
                                 : 'bg-muted border-muted text-muted-foreground/40 cursor-not-allowed'
                           )}
                         >
-                          <span className="text-sm tabular-nums">{slot.startTime}</span>
+                          <span className="text-xs font-normal tabular-nums">{slot.startTime}</span>
                           <span
                             className={cn(
-                              'text-[10px] font-normal mt-0.5',
+                              'text-[10px] font-bold mt-0.5',
                               isSlotInPast(slot, selectedDate)
                                 ? 'text-muted-foreground/30'
                                 : isSelected

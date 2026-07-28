@@ -1,3 +1,5 @@
+export type CashbackPurpose = 'COURT' | 'BAR';
+
 export type CashbackTransactionType =
   | 'EARNED_CONSUMPTION'
   | 'EARNED_BONUS'
@@ -6,10 +8,21 @@ export type CashbackTransactionType =
   | 'REFUND'
   | 'EXPIRATION';
 
+export interface CashbackConfig {
+  cashbackEnabled: boolean;
+  barCashbackEnabled: boolean;
+  defaultCashbackPercentage: number;
+  minPurchaseAmount: number;
+  expirationDays: number;
+  maxCashbackPerTransaction: number;
+}
+
 export interface CashbackWallet {
   id: string;
   userId: string;
   balance: number;
+  courtBalance: number;
+  barBalance: number;
   blockedBalance: number;
   totalEarned: number;
   totalSpent: number;
@@ -21,6 +34,7 @@ export interface CashbackTransaction {
   walletId: string;
   type: CashbackTransactionType;
   amount: number;
+  purpose?: CashbackPurpose;
   description?: string;
   bookingId?: string;
   tabId?: string;
@@ -41,10 +55,20 @@ export interface QrReceipt {
 
 export interface ScanQrReceiptPayload {
   receiptData: string;
+  purpose: CashbackPurpose;
 }
 
 export interface ScanQrReceiptResponse {
   cashbackEarned: number;
   totalAmount: number;
+  purpose: CashbackPurpose;
   receipt: QrReceipt;
+}
+
+export interface TransactionFilters {
+  purpose?: CashbackPurpose;
+  type?: CashbackTransactionType;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
 }

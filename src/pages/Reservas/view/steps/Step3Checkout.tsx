@@ -182,7 +182,9 @@ export const Step3Checkout: React.FC = () => {
   const discountAmount = activePromo?.discountAmount ?? 0;
   const priceAfterPromo = activePromo?.finalPrice ?? basePriceReais;
   const walletBalance = wallet?.balance ?? 0;
-  const maxCashback = Math.max(0, Math.min(walletBalance, priceAfterPromo - 0.01));
+  const courtBalance = wallet?.courtBalance ?? 0;
+  const barBalance = wallet?.barBalance ?? 0;
+  const maxCashback = Math.max(0, Math.min(courtBalance, priceAfterPromo - 0.01));
   const safeCashback = Math.min(cashbackAmount, maxCashback);
   const finalPrice = priceAfterPromo - safeCashback;
 
@@ -463,17 +465,28 @@ export const Step3Checkout: React.FC = () => {
         </div>
       </div>
 
-      {walletBalance > 0 && (
+      {courtBalance > 0 && (
         <div className="bg-card border border-border rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Wallet size={16} className="text-primary" />
-              <span className="text-sm font-medium text-foreground">Usar cashback</span>
+              <span className="text-sm font-medium text-foreground">Usar cashback da quadra</span>
             </div>
-            <span className="text-xs text-muted-foreground">
-              Disponível: {fmt(walletBalance)}
-            </span>
           </div>
+
+          <div className="flex gap-3 mb-3">
+            <div className="flex-1 bg-muted rounded-xl px-3 py-2">
+              <p className="text-xs text-muted-foreground">Quadra</p>
+              <p className="text-sm font-semibold">{fmt(courtBalance)}</p>
+            </div>
+            {barBalance > 0 && (
+              <div className="flex-1 bg-muted rounded-xl px-3 py-2">
+                <p className="text-xs text-muted-foreground">Bar</p>
+                <p className="text-sm font-semibold">{fmt(barBalance)}</p>
+              </div>
+            )}
+          </div>
+
           <input
             type="range"
             min={0}

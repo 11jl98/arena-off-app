@@ -70,6 +70,12 @@ export function useNotifications(): UseNotificationsReturn {
                         });
                 }
             }
+
+            if (notification.type === 'CASHBACK_RECEIVED') {
+                toast.success(notification.title, { description: notification.body });
+                queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
+                queryClient.invalidateQueries({ queryKey: ['cashback-transactions'] });
+            }
         };
 
         source.onerror = () => {

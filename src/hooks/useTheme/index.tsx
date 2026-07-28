@@ -1,17 +1,16 @@
-import { useAppStore } from '@/store/appStore';
 import { useEffect } from 'react';
-
+import { useAppStore } from '@/store/appStore';
 
 export const useTheme = () => {
   const { theme, setTheme } = useAppStore();
 
   useEffect(() => {
     const root = window.document.documentElement;
-
     root.classList.remove('light', 'dark');
 
     if (theme === 'system') {
-      root.classList.add('system');
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.add(systemDark ? 'dark' : 'light');
     } else {
       root.classList.add(theme);
     }
@@ -29,16 +28,8 @@ export const useTheme = () => {
     };
 
     mediaQuery.addEventListener('change', handleChange);
-
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  const getResolvedTheme = (): 'light' | 'dark' => {
-    if (theme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return theme;
-  };
-
-  return { theme, setTheme, resolvedTheme: getResolvedTheme() };
+  return { theme, setTheme };
 };

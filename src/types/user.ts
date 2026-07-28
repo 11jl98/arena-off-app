@@ -18,7 +18,6 @@ export interface User {
   photoURL?: string;
   role: UserRole;
   isBlocked: boolean;
-  cashbackBalance?: number;
   cpf?: string | null;
   phone?: string | null;
   clientProfile?: ClientProfile | null;
