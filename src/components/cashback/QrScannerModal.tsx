@@ -20,6 +20,7 @@ interface QrScannerModalProps {
   onClose: () => void;
   barEnabled: boolean;
   cashbackEnabled: boolean;
+  staffClientId?: string;
 }
 
 type Step = 'SCAN' | 'PURPOSE_SELECT' | 'SUCCESS';
@@ -27,7 +28,7 @@ type Step = 'SCAN' | 'PURPOSE_SELECT' | 'SUCCESS';
 const isNfceUrl = (text: string) =>
   /nfce|nfceweb|sefaz|fazenda\.gov/i.test(text);
 
-export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, barEnabled }) => {
+export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, barEnabled, staffClientId }) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scanningRef = useRef(false);
   const scannedRef = useRef(false);
@@ -45,6 +46,16 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
     mutationFn: (payload: { receiptData: string; purpose: CashbackPurpose }) =>
       CashbackService.scanQrReceipt(payload),
     onSuccess: (data) => {
+      const result = {
+        cashbackEarned: data.cashbackEarned,
+        totalAmount: data.totalAmount,
+        purpose: data.purpose,
+      };
+
+      setScanResult(result);
+      setIsProcessing(false);
+      setStep('SUCCESS');
+
       queryClient.setQueriesData<CashbackWallet>(
         { queryKey: ['cashback-wallet'] },
         (old) =>
@@ -66,14 +77,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
       );
       queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['cashback-transactions'] });
-
-      setScanResult({
-        cashbackEarned: data.cashbackEarned,
-        totalAmount: data.totalAmount,
-        purpose: data.purpose,
-      });
-      setIsProcessing(false);
-      setStep('SUCCESS');
     },
     onError: (err: Error) => {
       showError(err.message || 'Erro ao processar a nota. Tente novamente.');
@@ -197,7 +200,8 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
     submitReceipt({ receiptData: scannedData, purpose });
   };
 
-  const walletData = queryClient.getQueryData<CashbackWallet>(['cashback-wallet']);
+  const walletKey = staffClientId ? ['cashback-wallet', staffClientId] : ['cashback-wallet'];
+  const walletData = queryClient.getQueryData<CashbackWallet>(walletKey);
 
   return (
     <Drawer open={open} onOpenChange={(v) => !v && handleClose()}>

@@ -197,6 +197,7 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
         onClose={() => setScannerOpen(false)}
         barEnabled={barEnabled}
         cashbackEnabled={cashbackEnabled}
+        staffClientId={staffClientId}
       />
     </>
   );

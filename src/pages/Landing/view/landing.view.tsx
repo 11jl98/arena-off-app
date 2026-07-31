@@ -11,7 +11,6 @@ import {
   Trophy,
   ArrowRight,
   Phone,
-  Mail,
   Instagram,
   Facebook
 } from 'lucide-react';
@@ -216,11 +215,19 @@ export function LandingView() {
 
           <div>
             <h2 className="mb-6 text-2xl font-bold text-slate-900">Localização</h2>
-            <Card className="overflow-hidden rounded-3xl border-0 shadow-lg">
-              <div className="h-48 bg-linear-to-br from-slate-200 to-slate-300">
-                <div className="flex h-full items-center justify-center">
-                  <MapPin className="h-16 w-16 text-slate-400" />
-                </div>
+            <Card className="overflow-hidden rounded-3xl border-0 bg-white shadow-lg">
+              <div className="h-64 w-full">
+                <iframe
+                  src="https://maps.google.com/maps?q=Leles%20Valente%20-%20R.%20Ant%C3%B4nio%20Lopes%20L%C3%A9lis%2C%20349%20-%20Santo%20Ant%C3%B4nio%2C%20Vi%C3%A7osa%20-%20MG%2C%2036576-050&z=16&output=embed"
+                  title="Mapa - Arena Off Beach"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="h-full w-full"
+                />
               </div>
               <div className="p-6">
                 <div className="mb-4 flex items-start gap-3">
@@ -228,19 +235,26 @@ export function LandingView() {
                   <div>
                     <p className="font-medium text-slate-900">Arena Off Beach</p>
                     <p className="text-sm text-slate-600">
-                      Praia do Futuro - Fortaleza, CE
+                      R. Antônio Lopes Lélis, 349 - Santo Antônio
+                      <br />
+                      Viçosa - MG, 36576-050
                     </p>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-slate-600">
                     <Phone className="h-4 w-4" />
-                    <span>(85) 99999-0000</span>
+                    <span>(31) 3874-1619</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Mail className="h-4 w-4" />
-                    <span>contato@arenaoffbeach.com</span>
-                  </div>
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=Leles+Valente+R.+Ant%C3%B4nio+Lopes+L%C3%A9lis+349+Santo+Ant%C3%B4nio+Vi%C3%A7osa+MG+36576-050"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-[#ff5922] font-medium hover:underline"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    Abrir no Google Maps
+                  </a>
                 </div>
               </div>
             </Card>
@@ -282,7 +296,7 @@ export function LandingView() {
               <h4 className="mb-3 font-semibold">Redes Sociais</h4>
               <div className="flex gap-3">
                 <a
-                  href="https://instagram.com/arenaoffbeach"
+                  href="https://www.instagram.com/arenaoffbeach?igsh=MTZ2cmxqcTVjZTBmZQ=="
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 transition-colors hover:bg-white/20"
@@ -290,7 +304,7 @@ export function LandingView() {
                   <Instagram className="h-5 w-5" />
                 </a>
                 <a
-                  href="https://facebook.com/arenaoffbeach"
+                  href="https://www.facebook.com/arenaoffbeach/?locale=pt_BR"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 transition-colors hover:bg-white/20"

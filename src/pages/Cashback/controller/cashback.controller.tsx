@@ -17,7 +17,7 @@ export const CashbackController: React.FC = () => {
         enabled: !!currentUser,
       },
       {
-        queryKey: ['cashback-wallet', staffClientId],
+        queryKey: staffClientId ? ['cashback-wallet', staffClientId] : ['cashback-wallet'],
         queryFn: () => CashbackService.getWallet(staffClientId),
         staleTime: 30 * 1000,
         enabled: !!currentUser,
