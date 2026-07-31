@@ -16,7 +16,6 @@ import {
   ChevronDown,
   ChevronUp,
   CheckCircle2,
-  Gift,
   AlertTriangle,
 } from 'lucide-react';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
@@ -64,11 +63,6 @@ function formatSpecialHoursDetail(promo: { startTime?: string; endTime?: string;
   const days = formatDaysOfWeek(promo.daysOfWeek);
   if (days) parts.push(days);
   return parts.join(' · ');
-}
-
-function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
 }
 
 export const Step3Checkout: React.FC = () => {
@@ -158,17 +152,6 @@ export const Step3Checkout: React.FC = () => {
 
   const filteredPromos = availablePromos.filter((p) => {
     if (p.promotion.type === 'FIRST_BOOKING' && hasExistingBookings) return false;
-
-    if (
-      p.promotion.type === 'SPECIAL_HOURS' &&
-      p.promotion.startTime &&
-      p.promotion.endTime
-    ) {
-      const promoWindowHours =
-        (timeToMinutes(p.promotion.endTime) - timeToMinutes(p.promotion.startTime)) / 60;
-      if (hours < promoWindowHours) return false;
-    }
-
     return true;
   });
 
@@ -308,35 +291,7 @@ export const Step3Checkout: React.FC = () => {
           </div>
         )}
 
-        {!loadingPromos && filteredPromos.length === 1 && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 flex items-start gap-3">
-            <Gift size={16} className="text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-green-700 dark:text-green-300">
-                {filteredPromos[0].promotion.name}
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-400">
-                {PROMOTION_TYPE_LABELS[filteredPromos[0].promotion.type] ?? filteredPromos[0].promotion.type}
-                {filteredPromos[0].promotion.discountPercent
-                  ? ` · ${filteredPromos[0].promotion.discountPercent}% de desconto`
-                  : ''}
-                {filteredPromos[0].extraHours
-                  ? ` · +${filteredPromos[0].extraHours}h extra`
-                  : ''}
-              </p>
-              {filteredPromos[0].promotion.type === 'SPECIAL_HOURS' && (
-                <p className="text-xs text-green-500 dark:text-green-500 mt-0.5">
-                  {formatSpecialHoursDetail(filteredPromos[0].promotion)}
-                </p>
-              )}
-            </div>
-            <span className="text-xs font-bold text-green-600 dark:text-green-400 shrink-0">
-              -{fmt(filteredPromos[0].discountAmount)}
-            </span>
-          </div>
-        )}
-
-        {!loadingPromos && filteredPromos.length > 1 && (
+        {!loadingPromos && filteredPromos.length > 0 && (
           <div className="bg-card border border-border rounded-2xl overflow-hidden">
             <button
               onClick={() => setShowPromoList((v) => !v)}
