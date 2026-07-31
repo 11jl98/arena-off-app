@@ -96,7 +96,7 @@ const HistoryTab: React.FC = () => {
       )}
 
       {bookings.length > 0 && (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {bookings.map((booking) => (
             <BookingCard
               key={booking.id}
@@ -124,14 +124,16 @@ export const ReservasView: React.FC = () => {
   return (
     <div className="flex flex-col min-h-full">
       <div
-        className="bg-linear-to-r from-primary to-orange-600 px-4 pb-4"
+        className="bg-linear-to-r from-primary to-orange-600"
         style={{ paddingTop: isStandalone ? 'calc(2rem + env(safe-area-inset-top))' : '0.75rem' }}
       >
-        <h1 className="text-xl font-bold text-white">Reservas</h1>
-        <p className="text-white/80 text-sm mt-0.5">Agende quadras e veja seu histórico</p>
+        <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 pb-4">
+          <h1 className="text-xl font-bold text-white">Reservas</h1>
+          <p className="text-white/80 text-sm mt-0.5">Agende quadras e veja seu histórico</p>
+        </div>
       </div>
 
-      <div className="px-4 -mt-3 mb-4">
+      <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 -mt-3 mb-4">
         <div className="bg-card border border-border rounded-2xl p-1 flex shadow-sm">
           <button
             onClick={() => setActiveTab('nova')}
@@ -160,7 +162,7 @@ export const ReservasView: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 px-4 pb-4">
+      <div className="flex-1 mx-auto w-full max-w-5xl px-4 lg:px-8 pb-4">
         {activeTab === 'nova' ? (
           <BookingFlowProvider>
             <WizardContent onViewHistory={() => setActiveTab('historico')} />

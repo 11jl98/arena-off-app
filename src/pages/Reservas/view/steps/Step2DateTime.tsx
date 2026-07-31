@@ -232,7 +232,7 @@ export const Step2DateTime: React.FC = () => {
                       {label}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
                     {periodSlots.map((slot) => {
                       const isSelected = selectedSlots.some((s) => s.startTime === slot.startTime);
                       const isFirst =

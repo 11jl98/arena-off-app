@@ -3,14 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation } from '@tanstack/react-query';
-import { UserCheck, Loader2, Phone, CreditCard } from 'lucide-react';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerClose,
-} from '@/components/ui/drawer';
+import { Loader2, Phone, CreditCard } from 'lucide-react';
+import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { AuthService } from '@/services/auth';
 import { useUserStore } from '@/store/userStore';
 import { useNotify } from '@/hooks/useNotify';
@@ -116,27 +110,8 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
   }
 
   return (
-    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
-      <DrawerContent>
-        <DrawerHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <DrawerTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-              <UserCheck size={18} className="text-primary" />
-              Completar perfil
-            </DrawerTitle>
-            <DrawerClose asChild>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-full text-muted-foreground hover:bg-muted transition-colors"
-                aria-label="Fechar"
-              >
-                ✕
-              </button>
-            </DrawerClose>
-          </div>
-        </DrawerHeader>
-
-        <div className="px-4 pb-6 flex flex-col gap-4">
+    <ResponsiveModal open={open} onClose={onClose} title="Completar perfil">
+      <div className="px-4 pb-6 flex flex-col gap-4">
           {/* Info banner */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
             <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
@@ -210,7 +185,6 @@ export const CompleteProfileModal: React.FC<CompleteProfileModalProps> = ({
             </button>
           </form>
         </div>
-      </DrawerContent>
-    </Drawer>
+    </ResponsiveModal>
   );
 };

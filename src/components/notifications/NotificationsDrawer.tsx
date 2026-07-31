@@ -2,14 +2,8 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Bell, BellOff, CheckCheck, Loader2, X } from 'lucide-react';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerClose,
-} from '@/components/ui/drawer';
+import { BellOff, CheckCheck, Loader2 } from 'lucide-react';
+import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { NotificationsService } from '@/services/notifications';
 import { useNotificationStore } from '@/store/notificationStore';
 import type { AppNotification } from '@/types/notification';
@@ -97,52 +91,35 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({ open, 
   }, [open]);
 
   return (
-    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
-      <DrawerContent className="max-h-[85dvh]">
-        <DrawerHeader className="flex items-center justify-between pr-4 border-b border-border pb-3">
-          <div className="flex items-center gap-2">
-            <Bell size={16} className="text-primary" />
-            <DrawerTitle className="text-base">Notificações</DrawerTitle>
+    <ResponsiveModal open={open} onClose={onClose} title="Notificações">
+      <div className="flex flex-col">
+        {isLoading && (
+          <div className="flex justify-center py-10">
+            <Loader2 size={24} className="animate-spin text-primary" />
           </div>
-          <DrawerClose asChild>
-            <button
-              aria-label="Fechar notificações"
-              className="rounded-full p-1 hover:bg-muted transition-colors"
-            >
-              <X size={18} />
-            </button>
-          </DrawerClose>
-        </DrawerHeader>
+        )}
 
-        <div className="overflow-y-auto flex-1">
-          {isLoading && (
-            <div className="flex justify-center py-10">
-              <Loader2 size={24} className="animate-spin text-primary" />
+        {!isLoading && notifications.length === 0 && (
+          <div className="flex flex-col items-center gap-3 py-14 text-center px-4">
+            <BellOff size={36} className="text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Nenhuma notificação.</p>
+          </div>
+        )}
+
+        {!isLoading && notifications.length > 0 && (
+          <>
+            <div className="flex items-center justify-end px-4 py-2 border-b border-border">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <CheckCheck size={12} />
+                Todas marcadas como lidas
+              </span>
             </div>
-          )}
-
-          {!isLoading && notifications.length === 0 && (
-            <div className="flex flex-col items-center gap-3 py-14 text-center px-4">
-              <BellOff size={36} className="text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">Nenhuma notificação.</p>
-            </div>
-          )}
-
-          {!isLoading && notifications.length > 0 && (
-            <>
-              <div className="flex items-center justify-end px-4 py-2 border-b border-border">
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <CheckCheck size={12} />
-                  Todas marcadas como lidas
-                </span>
-              </div>
-              {notifications.map((n) => (
-                <NotificationRow key={n.id} notification={n} />
-              ))}
-            </>
-          )}
-        </div>
-      </DrawerContent>
-    </Drawer>
+            {notifications.map((n) => (
+              <NotificationRow key={n.id} notification={n} />
+            ))}
+          </>
+        )}
+      </div>
+    </ResponsiveModal>
   );
 };

@@ -3,12 +3,14 @@ import { AppRoutes } from './routes';
 import './styles/global.css';
 import { useTheme } from './hooks/useTheme';
 import { useAuth } from './hooks/useAuth';
+import { useDeviceDetection } from './hooks/useDeviceDetection';
 import { SplashScreen } from './components/SplashScreen';
 import { Toaster } from 'sonner';
 
 const App: React.FC = () => {
   useTheme();
   const { checkAuth, clearSession, isChecking } = useAuth();
+  const { isDesktop } = useDeviceDetection();
 
   useEffect(() => {
     checkAuth();
@@ -31,7 +33,7 @@ const App: React.FC = () => {
     <>
       <AppRoutes />
       <Toaster
-        position="bottom-center"
+        position={isDesktop ? 'bottom-right' : 'bottom-center'}
         richColors closeButton theme="system"
         toastOptions={{
           classNames: {

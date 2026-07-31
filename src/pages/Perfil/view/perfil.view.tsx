@@ -91,11 +91,13 @@ export const PerfilView: React.FC = () => {
   return (
     <div className="flex flex-col min-h-full">
       <div
-        className="bg-linear-to-r from-primary to-orange-600 px-4 pb-10"
+        className="bg-linear-to-r from-primary to-orange-600"
         style={{ paddingTop: isStandalone ? 'calc(2rem + env(safe-area-inset-top))' : '0.75rem' }}
       >
-        <h1 className="text-xl font-bold text-white">Perfil</h1>
-        <p className="text-white/80 text-sm mt-0.5">Suas informações pessoais</p>
+        <div className="mx-auto w-full max-w-3xl px-4 lg:px-8 pb-10">
+          <h1 className="text-xl font-bold text-white">Perfil</h1>
+          <p className="text-white/80 text-sm mt-0.5">Suas informações pessoais</p>
+        </div>
       </div>
 
       <div className="flex justify-center -mt-10 mb-4">
@@ -115,11 +117,15 @@ export const PerfilView: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 px-4 flex flex-col gap-5 pb-6">
-        <form
-          onSubmit={handleSubmit((v) => saveProfile(v))}
-          className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3"
-        >
+      <div className="flex-1 mx-auto w-full max-w-3xl px-4 lg:px-8 flex flex-col gap-5 pb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+          <form
+            onSubmit={handleSubmit((v) => saveProfile(v))}
+            className={cn(
+              'bg-card border border-border rounded-2xl p-4 flex flex-col gap-3',
+              !isClient && 'lg:col-span-2'
+            )}
+          >
           <h2 className="font-semibold text-foreground text-sm">Informações pessoais</h2>
 
           <div className="flex flex-col gap-1.5">
@@ -216,6 +222,8 @@ export const PerfilView: React.FC = () => {
             )}
           </div>
         )}
+
+        </div>
 
         <div className="bg-card border border-border rounded-2xl p-4">
           <h2 className="font-semibold text-foreground text-sm mb-3">Aparência</h2>

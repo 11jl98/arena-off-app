@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { CalendarDays, Wallet, User, Menu, X } from 'lucide-react';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { SidebarNav } from '@/components/layout/SidebarNav';
 import { InstallPWABanner } from '@/components/InstallPWABanner';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -18,7 +19,7 @@ const NAV_ITEMS = [
 ] as const;
 
 export const AppLayout: React.FC = () => {
-  const { isStandalone, isMobile } = useDeviceDetection();
+  const { isStandalone, isMobile, isDesktop } = useDeviceDetection();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const location = useLocation();
   const { drawerOpen, openDrawer, closeDrawer } = useNotifications();
@@ -32,6 +33,18 @@ export const AppLayout: React.FC = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileNavOpen(false);
   }, [location.pathname]);
+
+  if (isDesktop) {
+    return (
+      <div className="flex flex-row h-dvh w-full bg-background overflow-hidden">
+        <SidebarNav onOpenNotifications={openDrawer} />
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+          <Outlet />
+        </main>
+        <NotificationsDrawer open={drawerOpen} onClose={closeDrawer} />
+      </div>
+    );
+  }
 
   if (isStandalone) {
     return (

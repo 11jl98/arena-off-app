@@ -2,7 +2,8 @@
 export type NotificationType =
   | 'NEW_BOOKING'
   | 'BOOKING_CONFIRMED'
-  | 'BOOKING_CANCELLED';
+  | 'BOOKING_CANCELLED'
+  | 'CASHBACK_RECEIVED';
 
 export interface AppNotification {
   id: string;

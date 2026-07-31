@@ -7,20 +7,13 @@ import {
   Clock,
   MapPin,
   CreditCard,
-  X,
   AlertTriangle,
   Loader2,
   Ban,
   Lock,
   MessageCircle,
 } from 'lucide-react';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerClose,
-} from '@/components/ui/drawer';
+import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { BookingStatusBadge } from '@/components/booking/BookingStatusBadge';
 import { BookingsService } from '@/services/bookings';
 import { useNotify } from '@/hooks/useNotify';
@@ -97,23 +90,13 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
   const canCancel = isCancellableStatus && isCancellableByTime && !isPaidPix;
 
   return (
-    <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
-      <DrawerContent className="max-h-[90dvh]">
-        <DrawerHeader className="flex items-center justify-between pr-4">
-          <DrawerTitle className="text-base">Detalhes da Reserva</DrawerTitle>
-          <DrawerClose asChild>
-            <button className="rounded-full p-1 hover:bg-muted transition-colors">
-              <X size={18} />
-            </button>
-          </DrawerClose>
-        </DrawerHeader>
-
-        <div className="overflow-y-auto px-4 pb-8 flex flex-col gap-4">
-          {isLoading && (
-            <div className="flex justify-center py-8">
-              <Loader2 size={28} className="animate-spin text-primary" />
-            </div>
-          )}
+    <ResponsiveModal open={open} onClose={onClose} title="Detalhes da Reserva">
+      <div className="px-4 pb-8 flex flex-col gap-4">
+        {isLoading && (
+          <div className="flex justify-center py-8">
+            <Loader2 size={28} className="animate-spin text-primary" />
+          </div>
+        )}
 
           {booking && (
             <>
@@ -279,8 +262,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
               )}
             </>
           )}
-        </div>
-      </DrawerContent>
-    </Drawer>
+      </div>
+    </ResponsiveModal>
   );
 };

@@ -1,14 +1,8 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { X, Camera, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerClose,
-} from '@/components/ui/drawer';
+import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { CashbackService } from '@/services/cashback';
 import { useNotify } from '@/hooks/useNotify';
 import { QrPurposeSelector } from './QrPurposeSelector';
@@ -204,26 +198,19 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
   const walletData = queryClient.getQueryData<CashbackWallet>(walletKey);
 
   return (
-    <Drawer open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DrawerContent className="max-h-[90dvh] flex flex-col">
-        <DrawerHeader className="flex items-center justify-between pr-4 shrink-0">
-          <DrawerTitle className="flex items-center gap-2">
-            <Camera size={18} />
-            {step === 'SCAN' && 'Escanear nota fiscal'}
-            {step === 'PURPOSE_SELECT' && 'Escolher destino'}
-            {step === 'SUCCESS' && 'Concluído'}
-          </DrawerTitle>
-          <DrawerClose asChild>
-            <button
-              onClick={handleClose}
-              className="rounded-full p-1 hover:bg-muted transition-colors"
-            >
-              <X size={18} />
-            </button>
-          </DrawerClose>
-        </DrawerHeader>
-
-        <div key={step} className="px-4 flex flex-col items-center gap-5 overflow-y-auto flex-1 min-h-0" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <ResponsiveModal
+      open={open}
+      onClose={handleClose}
+      title={
+        step === 'SCAN'
+          ? 'Escanear nota fiscal'
+          : step === 'PURPOSE_SELECT'
+            ? 'Escolher destino'
+            : 'Concluído'
+      }
+      dialogClassName="max-w-md"
+    >
+      <div key={step} className="px-4 flex flex-col items-center gap-5" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           {step === 'SCAN' && (
             <>
               <p className="text-sm text-muted-foreground text-center">
@@ -293,7 +280,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
             />
           )}
         </div>
-      </DrawerContent>
-    </Drawer>
+    </ResponsiveModal>
   );
 };

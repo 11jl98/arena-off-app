@@ -41,7 +41,7 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
   const [scannerOpen, setScannerOpen] = useState(false);
   const [purposeTab, setPurposeTab] = useState<PurposeTab>(TAB_ALL);
   const [showFullExtract, setShowFullExtract] = useState(false);
-  const { isStandalone } = useDeviceDetection();
+  const { isStandalone, isDesktop } = useDeviceDetection();
 
   const barEnabled = config?.barCashbackEnabled ?? false;
   const cashbackEnabled = config?.cashbackEnabled ?? true;
@@ -70,32 +70,34 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
     <>
       <div className="flex flex-col min-h-full">
         <div
-          className="bg-linear-to-r from-primary to-orange-600 px-4 pb-14"
+          className="bg-linear-to-r from-primary to-orange-600"
           style={{ paddingTop: isStandalone ? 'calc(2rem + env(safe-area-inset-top))' : '0.75rem' }}
         >
-          <h1 className="text-xl font-bold text-white">Meu Cashback</h1>
-          <p className="text-white/80 text-sm mt-0.5">
-            Escaneie notas e acumule créditos
-          </p>
+          <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 pb-14">
+            <h1 className="text-xl font-bold text-white">Meu Cashback</h1>
+            <p className="text-white/80 text-sm mt-0.5">
+              Escaneie notas e acumule créditos
+            </p>
+          </div>
         </div>
 
-        <div className="px-4 -mt-14 mb-4">
+        <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 -mt-14 mb-4">
           <WalletCard
             wallet={wallet}
             loading={loadingWallet}
             barEnabled={barEnabled}
             cashbackEnabled={cashbackEnabled}
-            compact={!isStandalone}
+            compact={!isStandalone && !isDesktop}
           />
         </div>
 
-        {isStandalone && (
-          <div className="px-4 mb-4">
+        {(isStandalone || isDesktop) && (
+          <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 mb-4">
             <WalletInfoCards barEnabled={barEnabled} />
           </div>
         )}
 
-        <div className="px-4 mb-6">
+        <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 mb-6">
           <button
             onClick={() => {
               if (!cashbackEnabled) return;
@@ -115,7 +117,7 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
           </button>
         </div>
 
-        <div className="flex-1 px-4">
+        <div className="flex-1 mx-auto w-full max-w-5xl px-4 lg:px-8">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-foreground">Extrato</h2>
           </div>

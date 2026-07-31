@@ -125,3 +125,40 @@ body::-webkit-scrollbar,
 .animate-slide-up {
   animation: slide-up 0.3s ease-out forwards;
 }
+
+@media (min-width: 1024px) {
+  *,
+  *::before,
+  *::after {
+    user-select: text;
+  }
+
+  html,
+  body,
+  #root {
+    overflow: auto;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    display: initial;
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  body {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+    touch-action: auto;
+  }
+}
