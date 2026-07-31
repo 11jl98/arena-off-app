@@ -79,8 +79,8 @@ self.addEventListener('push', (event: PushEvent) => {
   let payload: PushPayload = {
     title: 'Arena Off',
     body: 'Voce tem uma nova atualizacao.',
-    icon: '/logo.jpg',
-    badge: '/logo.jpg',
+    icon: '/logo-192.png',
+    badge: '/logo-192.png',
   };
 
   if (event.data) {
@@ -95,8 +95,8 @@ self.addEventListener('push', (event: PushEvent) => {
 
   const promiseChain = self.registration.showNotification(payload.title, {
     body: payload.body,
-    icon: payload.icon ?? '/logo.jpg',
-    badge: payload.badge ?? '/logo.jpg',
+    icon: payload.icon ?? '/logo-192.png',
+    badge: payload.badge ?? '/logo-192.png',
     tag,
     data: payload.data,
     requireInteraction: false,

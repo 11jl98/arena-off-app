@@ -44,7 +44,17 @@ export default defineConfig({
       injectManifest: {
         injectionPoint: 'self.__WB_MANIFEST',
       },
-      includeAssets: ['logo.jpg'],
+      includeAssets: [
+        'logo.jpg',
+        'logo-192.png',
+        'logo-512.png',
+        'icons/maskable-192x192.png',
+        'icons/maskable-512x512.png',
+        'favicon-16x16.png',
+        'favicon-32x32.png',
+        'apple-touch-icon.png',
+        'apple-touch-icon-180x180.png',
+      ],
       manifest: {
         id: 'arena-off-beach-app',
         name: 'Arena Off Beach',
@@ -58,27 +68,27 @@ export default defineConfig({
         scope: '/',
         icons: [
           {
-            src: 'logo.jpg',
+            src: 'logo-192.png',
             sizes: '192x192',
-            type: 'image/jpeg',
+            type: 'image/png',
             purpose: 'any',
           },
           {
-            src: 'logo.jpg',
+            src: 'logo-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'icons/maskable-192x192.png',
             sizes: '192x192',
-            type: 'image/jpeg',
+            type: 'image/png',
             purpose: 'maskable',
           },
           {
-            src: 'logo.jpg',
+            src: 'icons/maskable-512x512.png',
             sizes: '512x512',
-            type: 'image/jpeg',
-            purpose: 'any',
-          },
-          {
-            src: 'logo.jpg',
-            sizes: '512x512',
-            type: 'image/jpeg',
+            type: 'image/png',
             purpose: 'maskable',
           },
         ],
@@ -90,6 +100,26 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+
+          const normalized = id.replace(/\\/g, '/');
+
+          if (normalized.includes('/firebase/') || normalized.includes('@firebase/')) return 'vendor-firebase';
+          if (normalized.includes('react-hook-form') || normalized.includes('/zod/') || normalized.includes('hookform-resolvers')) return 'vendor-forms';
+          if (normalized.includes('react-router')) return 'vendor-router';
+          if (normalized.includes('@tanstack')) return 'vendor-query';
+          if (normalized.includes('/react/') || normalized.includes('react-dom') || normalized.includes('/scheduler/') || normalized.includes('/react-is/')) return 'vendor-react';
+          if (normalized.includes('framer-motion')) return 'vendor-motion';
+          if (normalized.includes('@radix-ui') || normalized.includes('/vaul/') || normalized.includes('/sonner/') || normalized.includes('lucide-react') || normalized.includes('next-themes')) return 'vendor-ui';
+          return 'vendor-misc';
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': '/src',
