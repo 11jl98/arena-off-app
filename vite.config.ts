@@ -109,13 +109,16 @@ export default defineConfig({
           const normalized = id.replace(/\\/g, '/');
 
           if (normalized.includes('/firebase/') || normalized.includes('@firebase/')) return 'vendor-firebase';
-          if (normalized.includes('react-hook-form') || normalized.includes('/zod/') || normalized.includes('hookform-resolvers')) return 'vendor-forms';
-          if (normalized.includes('react-router')) return 'vendor-router';
-          if (normalized.includes('@tanstack')) return 'vendor-query';
-          if (normalized.includes('/react/') || normalized.includes('react-dom') || normalized.includes('/scheduler/') || normalized.includes('/react-is/')) return 'vendor-react';
-          if (normalized.includes('framer-motion')) return 'vendor-motion';
-          if (normalized.includes('@radix-ui') || normalized.includes('/vaul/') || normalized.includes('/sonner/') || normalized.includes('lucide-react') || normalized.includes('next-themes')) return 'vendor-ui';
-          return 'vendor-misc';
+          if (
+            normalized.includes('node_modules/react/') ||
+            normalized.includes('node_modules/react-dom/') ||
+            normalized.includes('node_modules/scheduler/') ||
+            normalized.includes('node_modules/react-is/')
+          ) {
+            return 'vendor-react';
+          }
+
+          return undefined;
         },
       },
     },
