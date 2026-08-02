@@ -20,9 +20,9 @@ export default defineConfig({
     },
     https: hasLocalCerts
       ? {
-        cert: fs.readFileSync(certPath),
-        key: fs.readFileSync(keyPath),
-      }
+          cert: fs.readFileSync(certPath),
+          key: fs.readFileSync(keyPath),
+        }
       : undefined,
     proxy: {
       '/api': {
@@ -93,7 +93,37 @@ export default defineConfig({
           },
         ],
       },
-
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        importScripts: ['sw-push.js'],
+        globPatterns: ['**/*.{js,css,json,png,svg,ico,webp,woff2}'],
+        globIgnores: ['**/logo-512.png'],
+        maximumFileSizeToCacheInBytes: 500 * 1024,
+        runtimeCaching: [
+          {
+            urlPattern: /\/api\/auth\//,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /\/api\//,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api',
+              networkTimeoutSeconds: 2,
+            },
+          },
+          {
+            urlPattern: /\/logo-512\.png$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: { maxEntries: 5, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+        ],
+      },
       devOptions: {
         enabled: true,
         type: 'module',
@@ -108,7 +138,8 @@ export default defineConfig({
 
           const normalized = id.replace(/\\/g, '/');
 
-          if (normalized.includes('/firebase/') || normalized.includes('@firebase/')) return 'vendor-firebase';
+          if (normalized.includes('/firebase/') || normalized.includes('@firebase/'))
+            return 'vendor-firebase';
           if (
             normalized.includes('node_modules/react/') ||
             normalized.includes('node_modules/react-dom/') ||
