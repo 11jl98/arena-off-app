@@ -240,7 +240,6 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         {isCancelled && paymentMethod === 'MERCADO_PAGO' && (
           <button
             onClick={() => {
-              // Preserve selected court + date, invalidate slots and go back to Step2
               setStep(2);
             }}
             className="w-full bg-primary/10 border border-primary text-primary font-semibold py-3 rounded-xl text-sm active:scale-[0.98] transition-transform"

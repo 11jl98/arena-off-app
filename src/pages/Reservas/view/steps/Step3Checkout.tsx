@@ -4,7 +4,6 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Loader2,
-  CreditCard,
   Banknote,
   ChevronLeft,
   Tag,
@@ -475,7 +474,7 @@ export const Step3Checkout: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             {(
               [
-                { value: 'MERCADO_PAGO', icon: CreditCard, label: 'Mercado Pago' },
+                // { value: 'MERCADO_PAGO', icon: CreditCard, label: 'Mercado Pago' },
                 { value: 'PRESENCIAL', icon: Banknote, label: 'Presencial' },
               ] as { value: PaymentMethod; icon: React.FC<{ size?: number }>; label: string }[]
             ).map(({ value, icon: Icon, label }) => (
