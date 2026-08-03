@@ -1,17 +1,15 @@
 import { httpClient } from './api';
 import type { InitiatePixPaymentResponse } from '@/types';
 
-export interface MercadoPagoPreference {
-  preferenceId: string;
-  checkoutUrl: string;
-}
-
 export const PaymentsService = {
-  async createMercadoPagoPreference(bookingId: string): Promise<MercadoPagoPreference> {
-    return httpClient.post<MercadoPagoPreference>('/payments/create-preference', { bookingId });
-  },
-
-  async initiatePixPayment(bookingId: string): Promise<InitiatePixPaymentResponse> {
-    return httpClient.post<InitiatePixPaymentResponse>('/payments/initiate', { bookingId });
+  /**
+   * Starts the online PIX payment for a PENDING booking.
+   * @param bookingId booking created with payOnline: true
+   * @param payerEmail required for guest bookings without a linked client (backend uses the profile email otherwise)
+   */
+  async initiatePixPayment(bookingId: string, payerEmail?: string): Promise<InitiatePixPaymentResponse> {
+    const payload: Record<string, string> = { bookingId };
+    if (payerEmail) payload.payerEmail = payerEmail;
+    return httpClient.post<InitiatePixPaymentResponse>('/payments/initiate', payload);
   },
 };

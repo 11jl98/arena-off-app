@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -17,7 +17,19 @@ import {
   ChevronUp,
   CheckCircle2,
   AlertTriangle,
+  ShieldAlert,
+  Check,
+  MessageCircle,
+  QrCode,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from '@/components/ui/alert-dialog';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
 import { CashbackService } from '@/services/cashback';
 import { PromotionsService } from '@/services/promotions';
@@ -26,10 +38,11 @@ import { CourtsService } from '@/services/courts';
 import { PaymentsService } from '@/services/payments';
 import { useUserStore } from '@/store/userStore';
 import { useNotify } from '@/hooks/useNotify';
+import { ARENA_CONTACT } from '@/utils/constants/app.constant';
 import { cn } from '@/lib/utils';
 import { getDurationInHours, formatDuration } from '@/utils/helpers/time.helper';
 import type { AppliedPromotion } from '@/types/promotion';
-import type { PaymentMethod } from '@/types/booking';
+import type { PaymentMethod, Booking } from '@/types/booking';
 import { CompleteProfileModal } from '@/components/booking/CompleteProfileModal';
 
 const fmt = (reais: number) =>
@@ -84,11 +97,14 @@ export const Step3Checkout: React.FC = () => {
   } = useBookingFlow();
 
   const currentUser = useUserStore((s) => s.user);
-  const { error: showError } = useNotify();
+  const { error: showError, warning: showWarning } = useNotify();
   const queryClient = useQueryClient();
   const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null);
   const [showPromoList, setShowPromoList] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showPixWarning, setShowPixWarning] = useState(false);
+  const [acceptedNoCancel, setAcceptedNoCancel] = useState(false);
+  const createdBookingRef = useRef<Booking | null>(null);
 
   const dateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   const startTime = selectedSlots[0]?.startTime ?? '';
@@ -172,6 +188,25 @@ export const Step3Checkout: React.FC = () => {
 
   const { mutate: confirmBooking, isPending } = useMutation({
     mutationFn: async () => {
+      if (paymentMethod === 'MERCADO_PAGO') {
+        // Fresh availability check right before paying — another user may have taken the slot
+        const freshSlots = await BookingsService.getAvailableSlots({
+          courtId: selectedCourt!.id,
+          date: dateStr,
+        });
+        const stillAvailable = selectedSlots.every((slot) => {
+          const fresh = freshSlots.find((fs) => fs.startTime === slot.startTime);
+          return !!fresh?.available;
+        });
+        if (!stillAvailable) {
+          const conflictError = new Error(
+            'Este horário foi reservado por outra pessoa agora mesmo. Escolha outro horário.'
+          ) as Error & { status: number };
+          conflictError.status = 409;
+          throw conflictError;
+        }
+      }
+
       const booking = await BookingsService.createBooking({
         courtId: selectedCourt!.id,
         clientId: currentUser!.id,
@@ -182,17 +217,24 @@ export const Step3Checkout: React.FC = () => {
         promotionId: activePromo?.promotion.id,
         cashbackUsed: safeCashback,
         paymentMethod,
+        payOnline: paymentMethod === 'MERCADO_PAGO',
       });
+      createdBookingRef.current = booking;
 
       if (paymentMethod === 'MERCADO_PAGO') {
         try {
           const pixData = await PaymentsService.initiatePixPayment(booking.id);
           setPixPaymentData(pixData);
         } catch (pixError) {
-          try {
-            await BookingsService.cancelBooking(booking.id);
-          } catch {
-            // best-effort; ignore secondary failure
+          const isActivePayment =
+            (pixError as unknown as { status?: number }).status === 400 &&
+            String((pixError as Error).message).toLowerCase().includes('active payment');
+          if (!isActivePayment) {
+            try {
+              await BookingsService.cancelBooking(booking.id);
+            } catch {
+              // best-effort; ignore secondary failure
+            }
           }
           throw pixError;
         }
@@ -207,6 +249,19 @@ export const Step3Checkout: React.FC = () => {
     },
     onError: (err: Error) => {
       const status = (err as unknown as { status?: number }).status;
+      const isActivePayment =
+        status === 400 && err.message?.toLowerCase().includes('active payment');
+
+      if (isActivePayment && createdBookingRef.current) {
+        // PIX already generated for this booking — open the payment screen instead of failing
+        showWarning(
+          'Pagamento já iniciado',
+          'Já existe um PIX ativo para esta reserva. Continue o pagamento na próxima tela.'
+        );
+        setCreatedBooking(createdBookingRef.current);
+        return;
+      }
+
       if (status === 409) {
         queryClient.invalidateQueries({ queryKey: ['slots', selectedCourt?.id, dateStr] });
         setSelectedSlots([]);
@@ -509,11 +564,17 @@ export const Step3Checkout: React.FC = () => {
           </button>
           <button
             onClick={() => {
-              if (paymentMethod === 'PRESENCIAL' && !isStaff && !hasRequiredProfile) {
-                setShowProfileModal(true);
+              if (paymentMethod === 'PRESENCIAL') {
+                if (!isStaff && !hasRequiredProfile) {
+                  setShowProfileModal(true);
+                  return;
+                }
+                confirmBooking();
                 return;
               }
-              confirmBooking();
+              // MERCADO_PAGO: mandatory warning before generating the PIX
+              setAcceptedNoCancel(false);
+              setShowPixWarning(true);
             }}
             disabled={isLoading || !selectedSport}
             className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-3 rounded-xl text-sm disabled:opacity-60 active:scale-[0.98] transition-transform"
@@ -523,6 +584,8 @@ export const Step3Checkout: React.FC = () => {
                 <Loader2 size={16} className="animate-spin" />
                 Processando...
               </>
+            ) : paymentMethod === 'MERCADO_PAGO' ? (
+              'Gerar PIX e pagar'
             ) : (
               'Confirmar reserva'
             )}
@@ -538,6 +601,83 @@ export const Step3Checkout: React.FC = () => {
           setPaymentMethod('PRESENCIAL');
         }}
       />
+
+      <AlertDialog
+        open={showPixWarning}
+        onOpenChange={(open) => {
+          setShowPixWarning(open);
+          if (!open) setAcceptedNoCancel(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldAlert size={20} className="text-primary" />
+              Pagamento online PIX
+            </AlertDialogTitle>
+            <AlertDialogDescription className="flex flex-col gap-2 text-left">
+              <p>
+                Ao gerar o PIX, este horário fica <strong className="text-foreground">reservado para você</strong>.
+                Pagamentos online <strong className="text-foreground">não podem ser cancelados pelo app</strong>.
+              </p>
+              <p>
+                Para cancelamento ou reembolso após o pagamento, entre em contato com a arena pelo WhatsApp.
+              </p>
+              <a
+                href={ARENA_CONTACT.WHATSAPP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-400"
+              >
+                <MessageCircle size={14} />
+                Falar com a arena
+              </a>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <label className="flex items-start gap-2.5 cursor-pointer select-none">
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={acceptedNoCancel}
+              onClick={() => setAcceptedNoCancel((v) => !v)}
+              className={cn(
+                'mt-0.5 flex items-center justify-center w-5 h-5 rounded-md border transition-colors',
+                acceptedNoCancel
+                  ? 'bg-primary border-primary text-primary-foreground'
+                  : 'border-border text-transparent'
+              )}
+            >
+              <Check size={14} strokeWidth={3} />
+            </button>
+            <span className="text-sm text-muted-foreground leading-snug">
+              Li e entendi que reservas pagas via PIX não podem ser canceladas pelo app e que reembolsos
+              são tratados com a arena.
+            </span>
+          </label>
+
+          <AlertDialogFooter className="gap-3 sm:gap-2">
+            <button
+              onClick={() => setShowPixWarning(false)}
+              disabled={isPending}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground disabled:opacity-50"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={() => {
+                setShowPixWarning(false);
+                confirmBooking();
+              }}
+              disabled={!acceptedNoCancel || isPending}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
+            >
+              {isPending ? <Loader2 size={15} className="animate-spin" /> : <QrCode size={15} />}
+              Gerar PIX e pagar
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

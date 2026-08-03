@@ -7,6 +7,8 @@ export interface InitiatePixPaymentResponse {
   pixQrCode: string;
   pixQrCodeBase64: string;
   pixTicketUrl: string;
+  /** ISO date — deadline for the PIX QR code (base of the countdown) */
+  expiresAt?: string;
 }
 
 export interface ApiResponse<T> {

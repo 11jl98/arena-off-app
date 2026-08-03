@@ -12,6 +12,8 @@ import {
   Ban,
   Lock,
   MessageCircle,
+  FileText,
+  ExternalLink,
 } from 'lucide-react';
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { BookingStatusBadge } from '@/components/booking/BookingStatusBadge';
@@ -87,7 +89,10 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
     return isBefore(addHours(new Date(), ARENA_CONTACT.CANCELLATION_HOURS), bookingStart);
   })();
 
-  const canCancel = isCancellableStatus && isCancellableByTime && !isPaidPix;
+  const canCancel = (isPendingUnpaid || (isCancellableStatus && isCancellableByTime)) && !isPaidPix;
+
+  const receiptUrl =
+    booking?.receipt?.url ?? booking?.payments?.find((p) => p.receipt?.url)?.receipt?.url;
 
   return (
     <ResponsiveModal open={open} onClose={onClose} title="Detalhes da Reserva">
@@ -170,6 +175,34 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                 </div>
               </div>
 
+              {isPaidPix && receiptUrl && (
+                <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <FileText size={15} className="text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Comprovante</span>
+                  </div>
+                  <a
+                    href={receiptUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 bg-primary/10 border border-primary text-primary text-sm font-semibold py-2.5 rounded-xl active:scale-[0.98] transition-transform"
+                  >
+                    <ExternalLink size={14} />
+                    Ver comprovante
+                  </a>
+                </div>
+              )}
+
+              {isPendingUnpaid && (
+                <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-3.5 py-3">
+                  <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                    Pagamento PIX pendente. O horário segue reservado até o pagamento ser confirmado
+                    ou expirar.
+                  </p>
+                </div>
+              )}
+
               {canCancel && (
                 <div className="pt-2">
                   {confirmCancel ? (
@@ -179,7 +212,9 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                         <p className="text-sm font-medium">Confirmar cancelamento?</p>
                       </div>
                       <p className="text-xs text-red-600 dark:text-red-400">
-                        Esta ação não pode ser desfeita.
+                        {isPendingUnpaid
+                          ? 'O horário será liberado para outras pessoas e o PIX será cancelado.'
+                          : 'Esta ação não pode ser desfeita.'}
                       </p>
                       <div className="flex gap-2">
                         <button

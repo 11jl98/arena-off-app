@@ -3,6 +3,7 @@ export type NotificationType =
   | 'NEW_BOOKING'
   | 'BOOKING_CONFIRMED'
   | 'BOOKING_CANCELLED'
+  | 'PAYMENT_CONFIRMED'
   | 'CASHBACK_RECEIVED';
 
 export interface AppNotification {

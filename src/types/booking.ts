@@ -5,9 +5,28 @@ export type BookingStatus =
   | 'COMPLETED'
   | 'NO_SHOW';
 
-export type PaymentStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'REFUNDED';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'CANCELLED' | 'REFUNDED';
 
 export type PaymentMethod = 'MERCADO_PAGO' | 'PRESENCIAL';
+
+export interface PaymentReceipt {
+  id: string;
+  url?: string;
+  amount?: number;
+  paidAt?: string;
+  method?: string;
+  mpOrderId?: string;
+}
+
+export interface BookingPayment {
+  id: string;
+  status: PaymentStatus;
+  method?: PaymentMethod;
+  mpOrderId?: string;
+  amount?: number;
+  receipt?: PaymentReceipt;
+  createdAt?: string;
+}
 
 export interface Booking {
   id: string;
@@ -38,10 +57,13 @@ export interface Booking {
   updatedAt: string;
   confirmedAt?: string;
   cancelledAt?: string;
-  /** @deprecated Auto-confirm migration — always null. Removed in future API version. */
+  /** TTL of a PENDING booking (slot held while waiting for the online payment) */
   pendingExpiresAt?: string;
   /** Mercado Pago order ID — set when payment is initiated */
   mpOrderId?: string;
+  /** Comprovante of the PAID online payment */
+  receipt?: PaymentReceipt;
+  payments?: BookingPayment[];
 }
 
 export interface AvailableSlot {
@@ -64,6 +86,8 @@ export interface CreateBookingPayload {
   promotionId?: string;
   cashbackUsed?: number;
   paymentMethod?: PaymentMethod;
+  /** When true, booking is created as PENDING (slot held) and released if the PIX is not paid within the TTL */
+  payOnline?: boolean;
   notes?: string;
 }
 

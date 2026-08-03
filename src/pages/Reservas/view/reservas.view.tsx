@@ -15,7 +15,15 @@ import { cn } from '@/lib/utils';
 const STEP_TITLES = ['Escolha a quadra', 'Data e horário', 'Confirmação', 'Reservado!'];
 
 const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory }) => {
-  const { step, goBack, reset } = useBookingFlow();
+  const { step, goBack, reset, createdBooking } = useBookingFlow();
+
+  const isPixPending =
+    !!createdBooking &&
+    createdBooking.paymentMethod === 'MERCADO_PAGO' &&
+    createdBooking.status === 'PENDING';
+
+  const stepTitle =
+    step === 4 && isPixPending ? 'Pagamento' : STEP_TITLES[step - 1];
 
   const showBackButton = step === 2 || step === 3;
   const showProgress = step <= 3;
@@ -33,7 +41,7 @@ const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory 
         ) : step === 4 ? null : (
           <div className="w-8" />
         )}
-        <h2 className="font-bold text-foreground text-base flex-1">{STEP_TITLES[step - 1]}</h2>
+        <h2 className="font-bold text-foreground text-base flex-1">{stepTitle}</h2>
         {step === 4 && (
           <button
             onClick={reset}

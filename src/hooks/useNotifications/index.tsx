@@ -47,12 +47,19 @@ export function useNotifications(): UseNotificationsReturn {
             addNotification(notification);
             incrementUnread();
 
-            if (notification.type === 'BOOKING_CONFIRMED' || notification.type === 'BOOKING_CANCELLED') {
-                if (notification.type === 'BOOKING_CONFIRMED') {
-                    toast.success(notification.title, { description: notification.body });
-                } else {
-                    toast.warning(notification.title, { description: notification.body });
-                }
+            if (
+              notification.type === 'BOOKING_CONFIRMED' ||
+              notification.type === 'PAYMENT_CONFIRMED' ||
+              notification.type === 'BOOKING_CANCELLED'
+            ) {
+              if (
+                notification.type === 'BOOKING_CONFIRMED' ||
+                notification.type === 'PAYMENT_CONFIRMED'
+              ) {
+                toast.success(notification.title, { description: notification.body });
+              } else {
+                toast.warning(notification.title, { description: notification.body });
+              }
 
                 queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
                 queryClient.invalidateQueries({ queryKey: ['slots'] });

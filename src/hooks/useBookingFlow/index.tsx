@@ -1,9 +1,11 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { Court, Sport } from '@/types/court';
 import type { AvailableSlot, PaymentMethod, Booking } from '@/types/booking';
 import type { InitiatePixPaymentResponse } from '@/types';
 
 export type BookingStep = 1 | 2 | 3 | 4;
+
+const PIX_SESSION_KEY = 'pix-flow-session';
 
 interface BookingFlowState {
   step: BookingStep;
@@ -29,6 +31,7 @@ interface BookingFlowActions {
   setPaymentMethod: (method: PaymentMethod) => void;
   setCreatedBooking: (booking: Booking) => void;
   updateCreatedBooking: (booking: Booking) => void;
+  clearCreatedBooking: () => void;
   setPixPaymentData: (data: InitiatePixPaymentResponse | null) => void;
   goNext: () => void;
   goBack: () => void;
@@ -50,13 +53,58 @@ const initialState: BookingFlowState = {
   pixPaymentData: null,
 };
 
+interface PixFlowSession {
+  createdBooking: Booking | null;
+  pixPaymentData: InitiatePixPaymentResponse | null;
+}
+
+function loadSession(): Partial<BookingFlowState> | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(PIX_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PixFlowSession;
+    if (!parsed.createdBooking && !parsed.pixPaymentData) return null;
+    return {
+      createdBooking: parsed.createdBooking ?? null,
+      pixPaymentData: parsed.pixPaymentData ?? null,
+      step: parsed.createdBooking ? 4 : 1,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistSession(booking: Booking | null, pix: InitiatePixPaymentResponse | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!booking && !pix) {
+      sessionStorage.removeItem(PIX_SESSION_KEY);
+      return;
+    }
+    sessionStorage.setItem(
+      PIX_SESSION_KEY,
+      JSON.stringify({ createdBooking: booking, pixPaymentData: pix } satisfies PixFlowSession)
+    );
+  } catch {
+    // storage unavailable — non-fatal, PIX screen just won't survive reloads
+  }
+}
+
 const BookingFlowCtx = createContext<BookingFlowContext | null>(null);
 
 export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<BookingFlowState>(initialState);
+  const [state, setState] = useState<BookingFlowState>(() => ({
+    ...initialState,
+    ...loadSession(),
+  }));
 
   const update = (partial: Partial<BookingFlowState>) =>
     setState((prev) => ({ ...prev, ...partial }));
+
+  useEffect(() => {
+    persistSession(state.createdBooking, state.pixPaymentData);
+  }, [state.createdBooking, state.pixPaymentData]);
 
   const value: BookingFlowContext = {
     ...state,
@@ -77,6 +125,11 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
       update({
         createdBooking: booking,
       }),
+    clearCreatedBooking: () =>
+      update({
+        createdBooking: null,
+        pixPaymentData: null,
+      }),
     setPixPaymentData: (pixPaymentData) => update({ pixPaymentData }),
     goNext: () =>
       setState((prev) => ({
@@ -88,7 +141,7 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
         ...prev,
         step: Math.max(prev.step - 1, 1) as BookingStep,
       })),
-    reset: () => setState(initialState),
+    reset: () => setState({ ...initialState }),
   };
 
   return <BookingFlowCtx.Provider value={value}>{children}</BookingFlowCtx.Provider>;
