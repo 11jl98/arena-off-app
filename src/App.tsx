@@ -6,6 +6,7 @@ import { useAuth } from './hooks/useAuth';
 import { useDeviceDetection } from './hooks/useDeviceDetection';
 import { SplashScreen } from './components/SplashScreen';
 import { Toaster } from 'sonner';
+import { getMercadoPagoInstance } from './lib/mercadopago';
 
 const App: React.FC = () => {
   useTheme();
@@ -14,6 +15,10 @@ const App: React.FC = () => {
 
   useEffect(() => {
     checkAuth();
+    // Preloads the Mercado Pago SDK so the card payment brick is ready when needed
+    getMercadoPagoInstance().catch(() => {
+      // non-fatal — card payment will be unavailable until the key is configured
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

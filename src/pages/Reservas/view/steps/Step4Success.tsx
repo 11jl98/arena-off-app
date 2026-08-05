@@ -29,8 +29,10 @@ import { useCountdown } from '@/hooks/useCountdown';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { useNotify } from '@/hooks/useNotify';
 import { BookingsService } from '@/services/bookings';
+import { CardPaymentForm } from '@/pages/Reservas/components/CardPaymentForm';
 import { ARENA_CONTACT } from '@/utils/constants/app.constant';
 import { cn } from '@/lib/utils';
+import type { InitiateCardPaymentResponse } from '@/types';
 
 const fmt = (reais: number) =>
   reais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -50,6 +52,9 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
     updateCreatedBooking,
     setPixPaymentData,
     clearCreatedBooking,
+    onlinePaymentMode,
+    cardPaymentData,
+    setCardPaymentData,
   } = useBookingFlow();
   const { isSupported, requestPermissionAndSubscribe } = usePushSubscription();
   const { success: showSuccess, error: showError } = useNotify();
@@ -66,15 +71,17 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
     return true;
   });
 
-  const isPix =
+  const isOnline =
     paymentMethod === 'MERCADO_PAGO' || createdBooking?.paymentMethod === 'MERCADO_PAGO';
   const isConfirmed =
     createdBooking?.status === 'CONFIRMED' || createdBooking?.status === 'COMPLETED';
   const isCancelled = createdBooking?.status === 'CANCELLED';
-  const isPixPending = !!createdBooking && isPix && !isConfirmed && !isCancelled;
+  const isOnlinePending = !!createdBooking && isOnline && !isConfirmed && !isCancelled;
+  const paymentMode = isOnline ? onlinePaymentMode : 'pix';
+  const cardStatus = cardPaymentData?.status ?? null;
 
   const { booking: watchedBooking, refetch: refetchPix } = usePixPaymentWatch(
-    isPixPending ? createdBooking!.id : null
+    isOnlinePending ? createdBooking!.id : null
   );
 
   useEffect(() => {
@@ -94,10 +101,10 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
   const { isExpired: countdownExpired, formatted: countdownLabel } = useCountdown(expiresAt);
 
   useEffect(() => {
-    if (countdownExpired && isPixPending) {
+    if (countdownExpired && isOnlinePending) {
       refetchPix();
     }
-  }, [countdownExpired, isPixPending, refetchPix]);
+  }, [countdownExpired, isOnlinePending, refetchPix]);
 
   const { mutate: cancelUnpaid, isPending: cancellingUnpaid } = useMutation({
     mutationFn: () => BookingsService.cancelBooking(createdBooking!.id),
@@ -118,8 +125,19 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
   const goChooseAnotherSlot = () => {
     queryClient.invalidateQueries({ queryKey: ['slots'] });
     setPixPaymentData(null);
+    setCardPaymentData(null);
     clearCreatedBooking();
     setStep(2);
+  };
+
+  const handleCardApproved = (result: InitiateCardPaymentResponse) => {
+    setCardPaymentData(result);
+    queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
+  };
+
+  const handleCardPending = (result: InitiateCardPaymentResponse) => {
+    setCardPaymentData(result);
   };
 
   if (!createdBooking) return null;
@@ -128,7 +146,9 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
   const receiptUrl =
     createdBooking.receipt?.url ??
     createdBooking.payments?.find((p) => p.receipt?.url)?.receipt?.url;
-  const showQr = isPixPending && !!pixPaymentData;
+  const showQr = isOnlinePending && paymentMode === 'pix' && !!pixPaymentData;
+  const showCardForm =
+    isOnlinePending && paymentMode === 'card' && cardStatus !== 'approved' && cardStatus !== 'pending';
 
   return (
     <div className="flex flex-col items-center gap-6 py-4 animate-fade-in">
@@ -150,7 +170,7 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
           {isCancelled
             ? 'Reserva cancelada'
             : isConfirmed
-              ? isPix
+              ? isOnline
                 ? 'Pagamento confirmado!'
                 : 'Reserva confirmada!'
               : 'Pagamento em andamento'}
@@ -159,12 +179,14 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
           {isCancelled
             ? 'O tempo para o pagamento expirou ou a reserva foi cancelada. O horário foi liberado para novas reservas.'
             : isConfirmed
-              ? isPix
+              ? isOnline
                 ? 'Seu pagamento foi confirmado e a reserva está garantida. Boa partida!'
                 : 'Sua quadra está confirmada. Apareça no horário combinado e boa partida!'
               : showQr
                 ? 'Escaneie o QR code ou copie a chave PIX para pagar. O horário está reservado para você.'
-                : 'Aguardando pagamento. O horário está reservado para você.'}
+                : paymentMode === 'card'
+                  ? 'Preencha os dados do cartão para concluir o pagamento. O horário está reservado para você.'
+                  : 'Aguardando pagamento. O horário está reservado para você.'}
         </p>
       </div>
 
@@ -258,7 +280,35 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         </div>
       )}
 
-      {isPixPending && !showQr && (
+      {showCardForm && (
+        <CardPaymentForm
+          booking={createdBooking}
+          onApproved={handleCardApproved}
+          onPending={handleCardPending}
+        />
+      )}
+
+      {isOnlinePending && paymentMode === 'card' && cardStatus === 'pending' && (
+        <div className="w-full bg-card border border-amber-200 dark:border-amber-800 rounded-2xl p-4 flex flex-col items-center gap-2 text-center">
+          <Loader2 size={26} className="text-amber-600 dark:text-amber-400 animate-spin" />
+          <p className="text-sm font-semibold text-foreground">Pagamento em análise</p>
+          <p className="text-xs text-muted-foreground">
+            Seu pagamento está sendo processado. A confirmação chega em instantes.
+          </p>
+        </div>
+      )}
+
+      {isOnlinePending && paymentMode === 'card' && cardStatus === 'approved' && (
+        <div className="w-full bg-card border border-green-200 dark:border-green-800 rounded-2xl p-4 flex flex-col items-center gap-2 text-center">
+          <CheckCircle2 size={28} className="text-green-600 dark:text-green-400" />
+          <p className="text-sm font-semibold text-foreground">Pagamento aprovado!</p>
+          <p className="text-xs text-muted-foreground">
+            Estamos confirmando sua reserva. Um instante...
+          </p>
+        </div>
+      )}
+
+      {isOnlinePending && paymentMode === 'pix' && !showQr && (
         <div className="w-full bg-card border border-border rounded-2xl px-4 py-3 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-xs text-yellow-600 dark:text-yellow-400 font-medium">
             <Loader2 size={13} className="animate-spin" />
@@ -323,7 +373,7 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
           </div>
         )}
 
-        {isConfirmed && isPix && (
+        {isConfirmed && isOnline && (
           <div className="border-t border-border pt-3 flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <FileText size={15} className="text-primary" />
@@ -348,12 +398,12 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         )}
       </div>
 
-      {isConfirmed && isPix && (
+      {isConfirmed && isOnline && (
         <div className="w-full flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
           <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="flex-1 flex flex-col gap-2">
             <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-              <span className="font-semibold">Cancelamento bloqueado:</span> reservas pagas via PIX
+              <span className="font-semibold">Cancelamento bloqueado:</span> reservas pagas online
               não podem ser canceladas pelo app. Para cancelar ou reembolsar, entre em contato com a
               arena.
             </p>
@@ -406,7 +456,7 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
       )}
 
       <div className="w-full flex flex-col gap-3">
-        {isPixPending && (
+        {isOnlinePending && (
           <>
             <button
               onClick={() => refetchPix()}
@@ -423,7 +473,7 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
                   <p className="text-sm font-medium">Cancelar e liberar este horário?</p>
                 </div>
                 <p className="text-xs text-red-600 dark:text-red-400">
-                  O horário será liberado para outras pessoas e o PIX será cancelado.
+                  O horário será liberado para outras pessoas e o pagamento será cancelado.
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -455,7 +505,7 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
           </>
         )}
 
-        {isCancelled && isPix && (
+        {isCancelled && isOnline && (
           <button
             onClick={goChooseAnotherSlot}
             className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-xl text-sm active:scale-[0.98] transition-transform"
@@ -473,7 +523,7 @@ export const Step4Success: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
           </button>
         )}
 
-        {!isPixPending && (
+        {!isOnlinePending && (
           <button
             onClick={() => {
               reset();

@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { Court, Sport } from '@/types/court';
 import type { AvailableSlot, PaymentMethod, Booking } from '@/types/booking';
-import type { InitiatePixPaymentResponse } from '@/types';
+import type { InitiatePixPaymentResponse, InitiateCardPaymentResponse } from '@/types';
 
 export type BookingStep = 1 | 2 | 3 | 4;
+
+export type OnlinePaymentMode = 'pix' | 'card';
 
 const PIX_SESSION_KEY = 'pix-flow-session';
 
@@ -16,8 +18,11 @@ interface BookingFlowState {
   slotDuration: number;
   cashbackAmount: number;
   paymentMethod: PaymentMethod;
+  /** Sub-instrument for online Mercado Pago payments (PIX vs credit card) */
+  onlinePaymentMode: OnlinePaymentMode;
   createdBooking: Booking | null;
   pixPaymentData: InitiatePixPaymentResponse | null;
+  cardPaymentData: InitiateCardPaymentResponse | null;
 }
 
 interface BookingFlowActions {
@@ -29,10 +34,12 @@ interface BookingFlowActions {
   setSport: (sport: Sport) => void;
   setCashbackAmount: (amount: number) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
+  setOnlinePaymentMode: (mode: OnlinePaymentMode) => void;
   setCreatedBooking: (booking: Booking) => void;
   updateCreatedBooking: (booking: Booking) => void;
   clearCreatedBooking: () => void;
   setPixPaymentData: (data: InitiatePixPaymentResponse | null) => void;
+  setCardPaymentData: (data: InitiateCardPaymentResponse | null) => void;
   goNext: () => void;
   goBack: () => void;
   reset: () => void;
@@ -49,13 +56,17 @@ const initialState: BookingFlowState = {
   slotDuration: 60,
   cashbackAmount: 0,
   paymentMethod: 'PRESENCIAL',
+  onlinePaymentMode: 'card',
   createdBooking: null,
   pixPaymentData: null,
+  cardPaymentData: null,
 };
 
 interface PixFlowSession {
   createdBooking: Booking | null;
   pixPaymentData: InitiatePixPaymentResponse | null;
+  cardPaymentData: InitiateCardPaymentResponse | null;
+  onlinePaymentMode: OnlinePaymentMode;
 }
 
 function loadSession(): Partial<BookingFlowState> | null {
@@ -63,11 +74,17 @@ function loadSession(): Partial<BookingFlowState> | null {
   try {
     const raw = sessionStorage.getItem(PIX_SESSION_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as PixFlowSession;
+    const parsed = JSON.parse(raw) as Partial<PixFlowSession>;
     if (!parsed.createdBooking && !parsed.pixPaymentData) return null;
     return {
       createdBooking: parsed.createdBooking ?? null,
       pixPaymentData: parsed.pixPaymentData ?? null,
+      cardPaymentData: parsed.cardPaymentData ?? null,
+      onlinePaymentMode: parsed.cardPaymentData
+        ? 'card'
+        : parsed.pixPaymentData
+          ? 'pix'
+          : (parsed.onlinePaymentMode ?? 'card'),
       step: parsed.createdBooking ? 4 : 1,
     };
   } catch {
@@ -75,16 +92,21 @@ function loadSession(): Partial<BookingFlowState> | null {
   }
 }
 
-function persistSession(booking: Booking | null, pix: InitiatePixPaymentResponse | null) {
+function persistSession(
+  booking: Booking | null,
+  pix: InitiatePixPaymentResponse | null,
+  card: InitiateCardPaymentResponse | null,
+  mode: OnlinePaymentMode
+) {
   if (typeof window === 'undefined') return;
   try {
-    if (!booking && !pix) {
+    if (!booking && !pix && !card) {
       sessionStorage.removeItem(PIX_SESSION_KEY);
       return;
     }
     sessionStorage.setItem(
       PIX_SESSION_KEY,
-      JSON.stringify({ createdBooking: booking, pixPaymentData: pix } satisfies PixFlowSession)
+      JSON.stringify({ createdBooking: booking, pixPaymentData: pix, cardPaymentData: card, onlinePaymentMode: mode } satisfies PixFlowSession)
     );
   } catch {
     // storage unavailable — non-fatal, PIX screen just won't survive reloads
@@ -103,8 +125,13 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setState((prev) => ({ ...prev, ...partial }));
 
   useEffect(() => {
-    persistSession(state.createdBooking, state.pixPaymentData);
-  }, [state.createdBooking, state.pixPaymentData]);
+    persistSession(
+      state.createdBooking,
+      state.pixPaymentData,
+      state.cardPaymentData,
+      state.onlinePaymentMode
+    );
+  }, [state.createdBooking, state.pixPaymentData, state.cardPaymentData, state.onlinePaymentMode]);
 
   const value: BookingFlowContext = {
     ...state,
@@ -116,6 +143,7 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setSport: (sport) => update({ selectedSport: sport }),
     setCashbackAmount: (cashbackAmount) => update({ cashbackAmount }),
     setPaymentMethod: (paymentMethod) => update({ paymentMethod }),
+    setOnlinePaymentMode: (onlinePaymentMode) => update({ onlinePaymentMode }),
     setCreatedBooking: (booking) =>
       update({
         createdBooking: booking,
@@ -129,8 +157,10 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
       update({
         createdBooking: null,
         pixPaymentData: null,
+        cardPaymentData: null,
       }),
     setPixPaymentData: (pixPaymentData) => update({ pixPaymentData }),
+    setCardPaymentData: (cardPaymentData) => update({ cardPaymentData }),
     goNext: () =>
       setState((prev) => ({
         ...prev,

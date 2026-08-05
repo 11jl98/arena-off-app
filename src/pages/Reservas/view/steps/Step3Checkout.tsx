@@ -20,6 +20,7 @@ import {
   Check,
   MessageCircle,
   QrCode,
+  CreditCard,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -88,6 +89,8 @@ export const Step3Checkout: React.FC = () => {
     setCashbackAmount,
     paymentMethod,
     setPaymentMethod,
+    onlinePaymentMode,
+    setOnlinePaymentMode,
     setCreatedBooking,
     setPixPaymentData,
     setSelectedSlots,
@@ -220,7 +223,7 @@ export const Step3Checkout: React.FC = () => {
       });
       createdBookingRef.current = booking;
 
-      if (paymentMethod === 'MERCADO_PAGO') {
+      if (paymentMethod === 'MERCADO_PAGO' && onlinePaymentMode === 'pix') {
         try {
           const pixData = await PaymentsService.initiatePixPayment(booking.id);
           setPixPaymentData(pixData);
@@ -251,7 +254,7 @@ export const Step3Checkout: React.FC = () => {
       const isActivePayment =
         status === 400 && err.message?.toLowerCase().includes('active payment');
 
-      if (isActivePayment && createdBookingRef.current) {
+      if (isActivePayment && createdBookingRef.current && onlinePaymentMode === 'pix') {
         // PIX already generated for this booking — open the payment screen instead of failing
         showWarning(
           'Pagamento já iniciado',
@@ -519,7 +522,7 @@ export const Step3Checkout: React.FC = () => {
           <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
             <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-              <span className="font-semibold">Atenção:</span> Ao pagar via PIX, a reserva não poderá ser cancelada após a confirmação do pagamento.
+              <span className="font-semibold">Atenção:</span> Ao pagar online, a reserva não poderá ser cancelada após a confirmação do pagamento.
             </p>
           </div>
         )}
@@ -529,26 +532,43 @@ export const Step3Checkout: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             {(
               [
-                // { value: 'MERCADO_PAGO', icon: CreditCard, label: 'Mercado Pago' },
+                { value: 'MERCADO_PAGO', mode: 'pix', icon: QrCode, label: 'PIX' },
+                { value: 'MERCADO_PAGO', mode: 'card', icon: CreditCard, label: 'Cartão' },
                 { value: 'PRESENCIAL', icon: Banknote, label: 'Presencial' },
-              ] as { value: PaymentMethod; icon: React.FC<{ size?: number }>; label: string }[]
-            ).map(({ value, icon: Icon, label }) => (
-              <button
-                key={value}
-                onClick={() =>
-                  value === 'PRESENCIAL' ? handleSelectPresencial() : setPaymentMethod(value)
-                }
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl border text-sm font-medium transition-all duration-150',
-                  paymentMethod === value
-                    ? 'bg-primary/10 border-primary text-primary'
-                    : 'bg-card border-border text-muted-foreground'
-                )}
-              >
-                <Icon size={20} />
-                {label}
-              </button>
-            ))}
+              ] as {
+                value: PaymentMethod;
+                mode?: 'pix' | 'card';
+                icon: React.FC<{ size?: number }>;
+                label: string;
+              }[]
+            ).map(({ value, mode, icon: Icon, label }) => {
+              const isActive =
+                value === 'PRESENCIAL'
+                  ? paymentMethod === 'PRESENCIAL'
+                  : paymentMethod === 'MERCADO_PAGO' && onlinePaymentMode === mode;
+              return (
+                <button
+                  key={label}
+                  onClick={() => {
+                    if (value === 'PRESENCIAL') {
+                      handleSelectPresencial();
+                      return;
+                    }
+                    setPaymentMethod(value);
+                    setOnlinePaymentMode(mode!);
+                  }}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl border text-sm font-medium transition-all duration-150',
+                    isActive
+                      ? 'bg-primary/10 border-primary text-primary'
+                      : 'bg-card border-border text-muted-foreground'
+                  )}
+                >
+                  <Icon size={20} />
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -571,7 +591,10 @@ export const Step3Checkout: React.FC = () => {
                 confirmBooking();
                 return;
               }
-              // MERCADO_PAGO: mandatory warning before generating the PIX
+              if (onlinePaymentMode === 'card') {
+                confirmBooking();
+                return;
+              }
               setAcceptedNoCancel(false);
               setShowPixWarning(true);
             }}
@@ -583,6 +606,8 @@ export const Step3Checkout: React.FC = () => {
                 <Loader2 size={16} className="animate-spin" />
                 Processando...
               </>
+            ) : paymentMethod === 'MERCADO_PAGO' && onlinePaymentMode === 'card' ? (
+              'Continuar para pagamento'
             ) : paymentMethod === 'MERCADO_PAGO' ? (
               'Gerar PIX e pagar'
             ) : (
