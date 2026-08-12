@@ -15,20 +15,18 @@ import {
   ChevronDown,
   ChevronUp,
   CheckCircle2,
-  AlertTriangle,
+  CreditCard,
 } from 'lucide-react';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
 import { CashbackService } from '@/services/cashback';
 import { PromotionsService } from '@/services/promotions';
 import { BookingsService } from '@/services/bookings';
 import { CourtsService } from '@/services/courts';
-import { PaymentsService } from '@/services/payments';
 import { useUserStore } from '@/store/userStore';
 import { useNotify } from '@/hooks/useNotify';
 import { cn } from '@/lib/utils';
 import { getDurationInHours, formatDuration } from '@/utils/helpers/time.helper';
 import type { AppliedPromotion } from '@/types/promotion';
-import type { PaymentMethod } from '@/types/booking';
 import { CompleteProfileModal } from '@/components/booking/CompleteProfileModal';
 
 const fmt = (reais: number) =>
@@ -73,10 +71,8 @@ export const Step3Checkout: React.FC = () => {
     setSport,
     cashbackAmount,
     setCashbackAmount,
-    paymentMethod,
     setPaymentMethod,
     setCreatedBooking,
-    setPixPaymentData,
     setSelectedSlots,
     setStep,
     goBack,
@@ -106,14 +102,6 @@ export const Step3Checkout: React.FC = () => {
 
   const hasRequiredProfile =
     isStaff || (!!currentUser?.cpf && !!currentUser?.phone);
-
-  function handleSelectPresencial() {
-    if (hasRequiredProfile) {
-      setPaymentMethod('PRESENCIAL');
-    } else {
-      setShowProfileModal(true);
-    }
-  }
 
   const { data: wallet } = useQuery({
     queryKey: ['cashback-wallet', isStaff ? currentUser?.id : undefined],
@@ -170,8 +158,8 @@ export const Step3Checkout: React.FC = () => {
   const finalPrice = priceAfterPromo - safeCashback;
 
   const { mutate: confirmBooking, isPending } = useMutation({
-    mutationFn: async () => {
-      const booking = await BookingsService.createBooking({
+    mutationFn: async (online: boolean) => {
+      return BookingsService.createBooking({
         courtId: selectedCourt!.id,
         clientId: currentUser!.id,
         sportId: selectedSport!.id,
@@ -180,24 +168,9 @@ export const Step3Checkout: React.FC = () => {
         endTime,
         promotionId: activePromo?.promotion.id,
         cashbackUsed: safeCashback,
-        paymentMethod,
+        paymentMethod: online ? 'MERCADO_PAGO' : 'PRESENCIAL',
+        payOnline: online,
       });
-
-      if (paymentMethod === 'MERCADO_PAGO') {
-        try {
-          const pixData = await PaymentsService.initiatePixPayment(booking.id);
-          setPixPaymentData(pixData);
-        } catch (pixError) {
-          try {
-            await BookingsService.cancelBooking(booking.id);
-          } catch {
-            // best-effort; ignore secondary failure
-          }
-          throw pixError;
-        }
-      }
-
-      return booking;
     },
     onSuccess: (booking) => {
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
@@ -459,45 +432,31 @@ export const Step3Checkout: React.FC = () => {
         )}
       </div>
 
-      <div className="flex flex-col gap-5 lg:w-96 lg:shrink-0">
-        {paymentMethod === 'MERCADO_PAGO' && (
-          <div className="flex items-start gap-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3">
-            <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-              <span className="font-semibold">Atenção:</span> Ao pagar via PIX, a reserva não poderá ser cancelada após a confirmação do pagamento.
-            </p>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-foreground">Forma de pagamento</p>
-          <div className="grid grid-cols-2 gap-3">
-            {(
-              [
-                // { value: 'MERCADO_PAGO', icon: CreditCard, label: 'Mercado Pago' },
-                { value: 'PRESENCIAL', icon: Banknote, label: 'Presencial' },
-              ] as { value: PaymentMethod; icon: React.FC<{ size?: number }>; label: string }[]
-            ).map(({ value, icon: Icon, label }) => (
-              <button
-                key={value}
-                onClick={() =>
-                  value === 'PRESENCIAL' ? handleSelectPresencial() : setPaymentMethod(value)
-                }
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl border text-sm font-medium transition-all duration-150',
-                  paymentMethod === value
-                    ? 'bg-primary/10 border-primary text-primary'
-                    : 'bg-card border-border text-muted-foreground'
-                )}
-              >
-                <Icon size={20} />
-                {label}
-              </button>
-            ))}
-          </div>
+      <div className="flex flex-col gap-4 lg:w-96 lg:shrink-0">
+        <div className="flex flex-col gap-1.5">
+          <button
+            onClick={() => confirmBooking(true)}
+            disabled={isLoading || !selectedSport}
+            className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-3 rounded-xl text-sm disabled:opacity-60 active:scale-[0.98] transition-transform"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Processando...
+              </>
+            ) : (
+              <>
+                <CreditCard size={16} />
+                Pagar agora
+              </>
+            )}
+          </button>
+          <p className="text-center text-xs text-muted-foreground px-2">
+            Ao pagar agora, o horário fica reservado até a confirmação do pagamento.
+          </p>
         </div>
 
-        <div className="flex gap-3 pt-1">
+        <div className="flex gap-3">
           <button
             onClick={goBack}
             disabled={isLoading}
@@ -508,23 +467,17 @@ export const Step3Checkout: React.FC = () => {
           </button>
           <button
             onClick={() => {
-              if (paymentMethod === 'PRESENCIAL' && !isStaff && !hasRequiredProfile) {
+              if (!isStaff && !hasRequiredProfile) {
                 setShowProfileModal(true);
                 return;
               }
-              confirmBooking();
+              confirmBooking(false);
             }}
             disabled={isLoading || !selectedSport}
-            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-3 rounded-xl text-sm disabled:opacity-60 active:scale-[0.98] transition-transform"
+            className="flex-1 flex items-center justify-center gap-2 border border-border text-foreground font-medium py-3 rounded-xl text-sm disabled:opacity-60 active:scale-[0.98] transition-transform"
           >
-            {isLoading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Processando...
-              </>
-            ) : (
-              'Confirmar reserva'
-            )}
+            <Banknote size={16} />
+            Pagar presencial
           </button>
         </div>
       </div>

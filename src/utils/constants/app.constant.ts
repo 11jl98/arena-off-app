@@ -3,6 +3,8 @@ export const APP_VERSION = 'v1.0.0';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+export const MERCADO_PAGO_PUBLIC_KEY = import.meta.env.VITE_MERCADO_PAGO_PUBLIC_KEY;
+
 export const ROUTES = {
   LANDING: '/',
   LOGIN: '/login',

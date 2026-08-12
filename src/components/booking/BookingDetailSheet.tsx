@@ -17,24 +17,24 @@ import { ResponsiveModal } from '@/components/ui/responsive-modal';
 import { BookingStatusBadge } from '@/components/booking/BookingStatusBadge';
 import { BookingsService } from '@/services/bookings';
 import { useNotify } from '@/hooks/useNotify';
+import { usePaymentCountdown } from '@/pages/Reservas/hooks/usePaymentCountdown';
+import { isPendingOnlinePayment, isPaidOnlinePayment, getBookingPaymentLabel } from '@/utils/helpers/booking.helper';
 import { ARENA_CONTACT } from '@/utils/constants/app.constant';
 import { cn } from '@/lib/utils';
+import type { Booking } from '@/types/booking';
 const fmt = (reais: number) =>
   reais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-const PAYMENT_LABELS: Record<string, string> = {
-  MERCADO_PAGO: 'Mercado Pago',
-  PRESENCIAL: 'Presencial',
-};
 
 interface BookingDetailSheetProps {
   bookingId: string | null;
   onClose: () => void;
+  onContinuePayment?: (booking: Booking) => void;
 }
 
 export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
   bookingId,
   onClose,
+  onContinuePayment,
 }) => {
   const open = !!bookingId;
   const { success: showSuccess, error: showError } = useNotify();
@@ -71,13 +71,9 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
 
   const isCancellableStatus = booking?.status === 'CONFIRMED';
 
-  const isPaidPix =
-    booking?.paymentStatus === 'PAID' &&
-    booking?.paymentMethod === 'MERCADO_PAGO';
+  const isPaidPix = isPaidOnlinePayment(booking);
 
-  const isPendingUnpaid =
-    booking?.paymentMethod === 'MERCADO_PAGO' &&
-    booking?.paymentStatus === 'PENDING';
+  const isPendingUnpaid = isPendingOnlinePayment(booking);
 
   const isCancellableByTime = (() => {
     if (!booking) return false;
@@ -87,7 +83,10 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
     return isBefore(addHours(new Date(), ARENA_CONTACT.CANCELLATION_HOURS), bookingStart);
   })();
 
-  const canCancel = isCancellableStatus && isCancellableByTime && !isPaidPix;
+  const canCancel =
+    (isCancellableStatus || isPendingUnpaid) && isCancellableByTime && !isPaidPix;
+
+  const { formatted: countdown } = usePaymentCountdown(booking?.pendingExpiresAt);
 
   return (
     <ResponsiveModal open={open} onClose={onClose} title="Detalhes da Reserva">
@@ -110,7 +109,10 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                     </p>
                   </div>
                 </div>
-                <BookingStatusBadge status={booking.status} />
+                <BookingStatusBadge
+                  status={booking.status}
+                  paymentStatus={booking.paymentStatus}
+                />
               </div>
 
               <div className="bg-muted/50 rounded-2xl p-4 grid grid-cols-2 gap-4 text-sm">
@@ -135,7 +137,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                     <CreditCard size={11} /> Pagamento
                   </span>
                   <span className="font-medium">
-                    {PAYMENT_LABELS[booking.paymentMethod ?? 'PRESENCIAL']}
+                    {getBookingPaymentLabel(booking)}
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
@@ -169,6 +171,30 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                   <span className="text-primary">{fmt(booking.finalAmount)}</span>
                 </div>
               </div>
+
+              {isPendingUnpaid && onContinuePayment && (
+                <div className="flex flex-col gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                      Aguardando pagamento
+                    </p>
+                    <span className="font-mono font-bold tabular-nums text-amber-700 dark:text-amber-300">
+                      {countdown}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    O horário fica reservado por mais {countdown}. Finalize o pagamento para
+                    confirmar a reserva.
+                  </p>
+                  <button
+                    onClick={() => onContinuePayment(booking)}
+                    className="flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-semibold py-2.5 rounded-xl active:scale-[0.98] transition-transform"
+                  >
+                    <CreditCard size={16} />
+                    Pagar agora
+                  </button>
+                </div>
+              )}
 
               {canCancel && (
                 <div className="pt-2">

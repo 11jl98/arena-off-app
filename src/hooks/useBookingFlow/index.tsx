@@ -1,9 +1,11 @@
 import { createContext, useContext, useState } from 'react';
 import type { Court, Sport } from '@/types/court';
 import type { AvailableSlot, PaymentMethod, Booking } from '@/types/booking';
-import type { InitiatePixPaymentResponse } from '@/types';
+import type { InitiatePaymentResponse } from '@/types/payment';
 
 export type BookingStep = 1 | 2 | 3 | 4;
+
+const PENDING_PAYMENT_KEY = 'mp_pending_payment';
 
 interface BookingFlowState {
   step: BookingStep;
@@ -15,7 +17,7 @@ interface BookingFlowState {
   cashbackAmount: number;
   paymentMethod: PaymentMethod;
   createdBooking: Booking | null;
-  pixPaymentData: InitiatePixPaymentResponse | null;
+  paymentData: InitiatePaymentResponse | null;
 }
 
 interface BookingFlowActions {
@@ -29,7 +31,8 @@ interface BookingFlowActions {
   setPaymentMethod: (method: PaymentMethod) => void;
   setCreatedBooking: (booking: Booking) => void;
   updateCreatedBooking: (booking: Booking) => void;
-  setPixPaymentData: (data: InitiatePixPaymentResponse | null) => void;
+  setPaymentData: (data: InitiatePaymentResponse | null) => void;
+  resumeBooking: (booking: Booking) => void;
   goNext: () => void;
   goBack: () => void;
   reset: () => void;
@@ -47,10 +50,28 @@ const initialState: BookingFlowState = {
   cashbackAmount: 0,
   paymentMethod: 'PRESENCIAL',
   createdBooking: null,
-  pixPaymentData: null,
+  paymentData: null,
 };
 
 const BookingFlowCtx = createContext<BookingFlowContext | null>(null);
+
+function readPendingPayment(): { bookingId: string; paymentData: InitiatePaymentResponse } | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_PAYMENT_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as { bookingId: string; paymentData: InitiatePaymentResponse };
+  } catch {
+    return null;
+  }
+}
+
+function clearPendingPayment() {
+  try {
+    sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<BookingFlowState>(initialState);
@@ -73,11 +94,39 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
         createdBooking: booking,
         step: 4,
       }),
-    updateCreatedBooking: (booking) =>
+    updateCreatedBooking: (booking) => {
+      if (booking === state.createdBooking) return;
       update({
         createdBooking: booking,
-      }),
-    setPixPaymentData: (pixPaymentData) => update({ pixPaymentData }),
+      });
+    },
+    setPaymentData: (paymentData) => {
+      if (paymentData === state.paymentData) return;
+      update({ paymentData });
+      if (state.createdBooking) {
+        try {
+          if (paymentData) {
+            sessionStorage.setItem(
+              PENDING_PAYMENT_KEY,
+              JSON.stringify({ bookingId: state.createdBooking.id, paymentData })
+            );
+          } else {
+            sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    },
+    resumeBooking: (booking) => {
+      const pending = readPendingPayment();
+      update({
+        createdBooking: booking,
+        paymentMethod: 'MERCADO_PAGO',
+        paymentData: pending && pending.bookingId === booking.id ? pending.paymentData : null,
+        step: 4,
+      });
+    },
     goNext: () =>
       setState((prev) => ({
         ...prev,
@@ -88,7 +137,10 @@ export const BookingFlowProvider: React.FC<{ children: React.ReactNode }> = ({ c
         ...prev,
         step: Math.max(prev.step - 1, 1) as BookingStep,
       })),
-    reset: () => setState(initialState),
+    reset: () => {
+      clearPendingPayment();
+      setState(initialState);
+    },
   };
 
   return <BookingFlowCtx.Provider value={value}>{children}</BookingFlowCtx.Provider>;
