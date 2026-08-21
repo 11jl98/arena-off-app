@@ -25,6 +25,7 @@ import { BookingsService } from '@/services/bookings';
 import { useUserStore } from '@/store/userStore';
 import { useNotify } from '@/hooks/useNotify';
 import { isOnlinePayment, getBookingPaymentLabel } from '@/utils/helpers/booking.helper';
+import { getPaymentErrorMessage } from '@/utils/helpers/payment.helper';
 import { cn } from '@/lib/utils';
 import type { InitiatePaymentResponse, OnlinePaymentMethod } from '@/types/payment';
 
@@ -58,6 +59,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
   const [phase, setPhase] = useState<Phase>(() =>
     deriveInitialPhase(createdBooking?.status, paymentData)
   );
+  const [cardType, setCardType] = useState<'credit' | 'debit'>('credit');
   const [initiating, setInitiating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showPushBanner, setShowPushBanner] = useState(() => {
@@ -94,7 +96,8 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
 
   const handleSelectMethod = async (m: OnlinePaymentMethod) => {
     if (!createdBooking) return;
-    if (m === 'CREDIT_CARD') {
+    if (m === 'CREDIT_CARD' || m === 'DEBIT_CARD') {
+      setCardType(m === 'DEBIT_CARD' ? 'debit' : 'credit');
       setPhase('card');
       return;
     }
@@ -112,7 +115,9 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         setPhase('pix');
       } else {
         setPhase('select');
-        showError((err as Error).message || 'Não foi possível gerar o PIX. Tente novamente.');
+        showError(
+          getPaymentErrorMessage(err, 'Não foi possível gerar o PIX. Tente novamente.')
+        );
       }
     } finally {
       setInitiating(false);
@@ -151,7 +156,9 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
       setPaymentData(null);
       setPhase('expired');
     } catch (err) {
-      showError((err as Error).message || 'Erro ao cancelar a reserva. Tente novamente.');
+      showError(
+        getPaymentErrorMessage(err, 'Erro ao cancelar a reserva. Tente novamente.')
+      );
     } finally {
       setCancelling(false);
     }
@@ -206,15 +213,22 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
       )}
 
       {phase === 'card' && (
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md flex flex-col gap-3">
           <CardPaymentForm
             bookingId={createdBooking.id}
             amount={createdBooking.finalAmount}
+            cardType={cardType}
             payerEmail={currentUser?.email}
             payerCpf={currentUser?.cpf}
             onApproved={handleCardApproved}
             onInProcess={handleCardInProcess}
           />
+          <button
+            onClick={() => setPhase('select')}
+            className="w-full border border-border text-foreground font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-transform"
+          >
+            Trocar forma de pagamento
+          </button>
         </div>
       )}
 

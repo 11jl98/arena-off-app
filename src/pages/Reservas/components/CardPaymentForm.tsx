@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CardPayment, initMercadoPago } from '@mercadopago/sdk-react';
 import { Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { PaymentsService } from '@/services/payments';
+import { getPaymentErrorMessage } from '@/utils/helpers/payment.helper';
 import { MERCADO_PAGO_PUBLIC_KEY } from '@/utils/constants/app.constant';
 import type { InitiatePaymentResponse } from '@/types/payment';
 
@@ -13,6 +14,7 @@ const fmt = (reais: number) =>
 interface CardPaymentFormProps {
   bookingId: string;
   amount: number;
+  cardType?: 'credit' | 'debit';
   payerEmail?: string;
   payerCpf?: string | null;
   onApproved: (data: InitiatePaymentResponse) => void;
@@ -22,6 +24,7 @@ interface CardPaymentFormProps {
 export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
   bookingId,
   amount,
+  cardType = 'credit',
   payerEmail,
   payerCpf,
   onApproved,
@@ -57,18 +60,35 @@ export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
   }, [publicKey]);
 
   const handleSubmit = useCallback(
-    async (cardData: { token: string; installments: number; payment_method_id?: string }) => {
+    async (
+      cardData: { token: string; installments: number; payment_method_id?: string },
+      additionalData?: { paymentTypeId?: string }
+    ) => {
       setError(null);
+      const isDebit =
+        additionalData?.paymentTypeId === 'debit_card' ||
+        (cardData.payment_method_id ?? '').toLowerCase().startsWith('deb');
       try {
         const data = await PaymentsService.initiatePayment({
           bookingId,
-          method: 'CREDIT_CARD',
+          method: isDebit ? 'DEBIT_CARD' : 'CREDIT_CARD',
           cardToken: cardData.token,
           paymentMethodId: cardData.payment_method_id,
           installments: cardData.installments || 1,
+          payerEmail,
         });
         if (data.status === 'approved') {
           onApproved(data);
+        } else if (
+          /reject/i.test(data.status ?? '') ||
+          /reject/i.test(data.statusDetail ?? '')
+        ) {
+          const reason = data.statusDetail?.includes('insufficient_funds')
+            ? 'Pagamento recusado: saldo insuficiente no cartão.'
+            : 'Pagamento recusado. Verifique os dados do cartão e tente novamente.';
+          setError(
+            `${reason} Sua reserva continua pendente — tente outro cartão ou escolha outra forma de pagamento.`
+          );
         } else {
           onInProcess(data);
         }
@@ -77,12 +97,13 @@ export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
         setError(
           status === 400
             ? 'Pagamento recusado. Verifique os dados do cartão e tente novamente.'
-            : (err as Error).message || 'Não foi possível processar o pagamento. Tente novamente.'
+            : getPaymentErrorMessage(err, 'Não foi possível processar o pagamento. Tente novamente.')
         );
+        // Rejeitar a promise faz o brick resetar o formulário para nova tentativa.
         throw err;
       }
     },
-    [bookingId, onApproved, onInProcess]
+    [bookingId, payerEmail, onApproved, onInProcess]
   );
 
   const onReady = useCallback(() => setError(null), []);
@@ -105,7 +126,10 @@ export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
 
   const customization = useMemo(
     () => ({
-      paymentMethods: { minInstallments: 1, maxInstallments: 12 },
+      paymentMethods: {
+        minInstallments: 1,
+        maxInstallments: 1,
+      },
       visual: { hideFormTitle: true },
     }),
     []
@@ -142,9 +166,11 @@ export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
       )}
 
       <div className="bg-card border border-border rounded-2xl p-4">
-        <p className="text-sm font-semibold text-foreground mb-1">Cartão de crédito</p>
+        <p className="text-sm font-semibold text-foreground mb-1">
+          {cardType === 'debit' ? 'Cartão de débito' : 'Cartão de crédito'}
+        </p>
         <p className="text-xs text-muted-foreground mb-3">
-          Você será cobrado em {fmt(amount)} (parcelas disponíveis conforme a bandeira).
+          Você será cobrado à vista em {fmt(amount)}.
         </p>
         <CardPayment
           initialization={initialization}

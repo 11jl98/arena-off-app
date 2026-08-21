@@ -46,10 +46,26 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({ am
         <span className="flex-1 flex flex-col gap-0.5">
           <span className="font-semibold text-foreground">Cartão de crédito</span>
           <span className="text-xs text-muted-foreground">
-            Pague agora com cartão, em até 12x.
+            Pague agora com cartão, à vista.
           </span>
         </span>
-        <span className="text-xs font-semibold text-primary shrink-0">Em até 12x</span>
+        <span className="text-xs font-semibold text-primary shrink-0">À vista</span>
+      </button>
+
+      <button
+        onClick={() => onSelect('DEBIT_CARD')}
+        className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border text-left active:scale-[0.98] transition-transform hover:border-primary/60"
+      >
+        <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <CreditCard size={22} />
+        </span>
+        <span className="flex-1 flex flex-col gap-0.5">
+          <span className="font-semibold text-foreground">Cartão de débito</span>
+          <span className="text-xs text-muted-foreground">
+            Pague agora na hora com o saldo da sua conta.
+          </span>
+        </span>
+        <span className="text-xs font-semibold text-primary shrink-0">À vista</span>
       </button>
 
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">

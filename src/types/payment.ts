@@ -1,4 +1,4 @@
-export type OnlinePaymentMethod = 'PIX' | 'CREDIT_CARD';
+export type OnlinePaymentMethod = 'PIX' | 'CREDIT_CARD' | 'DEBIT_CARD';
 
 export interface InitiatePaymentRequest {
   bookingId: string;

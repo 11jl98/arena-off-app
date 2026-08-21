@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Loader2, CalendarDays, History, Plus } from 'lucide-react';
@@ -12,7 +12,7 @@ import { BookingCard } from '@/components/booking/BookingCard';
 import { BookingDetailSheet } from '@/components/booking/BookingDetailSheet';
 import { BookingsService } from '@/services/bookings';
 import { cn } from '@/lib/utils';
-import type { Booking } from '@/types/booking';
+import type { Booking, BookingStatus } from '@/types/booking';
 
 const STEP_TITLES = ['Escolha a quadra', 'Data e horário', 'Confirmação', 'Finalizar'];
 
@@ -72,6 +72,7 @@ const HistoryTab: React.FC<{ onContinuePayment: (booking: Booking) => void }> = 
   onContinuePayment,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<BookingStatus | 'all'>('all');
   const { success: showSuccess, error: showError } = useNotify();
   const queryClient = useQueryClient();
 
@@ -99,7 +100,24 @@ const HistoryTab: React.FC<{ onContinuePayment: (booking: Booking) => void }> = 
     },
   });
 
-  const bookings = data ?? [];
+  const bookings = useMemo(() => data ?? [], [data]);
+
+  const FILTERS: { value: BookingStatus | 'all'; label: string }[] = [
+    { value: 'all', label: 'Todas' },
+    { value: 'PENDING', label: 'Pendentes' },
+    { value: 'CONFIRMED', label: 'Confirmadas' },
+    { value: 'CANCELLED', label: 'Canceladas' },
+  ];
+
+  const filteredBookings = useMemo(() => {
+    const filtered =
+      filter === 'all' ? bookings : bookings.filter((b) => b.status === filter);
+    return [...filtered].sort((a, b) => {
+      if (a.status === 'PENDING' && b.status !== 'PENDING') return -1;
+      if (b.status === 'PENDING' && a.status !== 'PENDING') return 1;
+      return 0;
+    });
+  }, [bookings, filter]);
 
   const handleCancel = (booking: Booking) => {
     cancelBooking(booking, {
@@ -117,19 +135,44 @@ const HistoryTab: React.FC<{ onContinuePayment: (booking: Booking) => void }> = 
         </div>
       )}
 
-      {!isLoading && bookings.length === 0 && (
-        <div className="flex flex-col items-center gap-3 py-14 text-center">
-          <CalendarDays size={40} className="text-muted-foreground/40" />
-          <p className="text-muted-foreground text-sm">Nenhuma reserva encontrada.</p>
-          <p className="text-xs text-muted-foreground/70">
-            Suas reservas aparecerão aqui após você agendar.
-          </p>
+      {!isLoading && bookings.length > 0 && (
+        <div className="flex gap-2 mb-4">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={cn(
+                'flex-1 py-2 rounded-xl text-xs font-medium transition-all duration-150 border',
+                filter === f.value
+                  ? 'bg-primary text-primary-foreground border-primary shadow'
+                  : 'bg-card text-muted-foreground border-border'
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {bookings.length > 0 && (
+      {!isLoading && filteredBookings.length === 0 && (
+        <div className="flex flex-col items-center gap-3 py-14 text-center">
+          <CalendarDays size={40} className="text-muted-foreground/40" />
+          <p className="text-muted-foreground text-sm">Nenhuma reserva encontrada.</p>
+          {bookings.length === 0 ? (
+            <p className="text-xs text-muted-foreground/70">
+              Suas reservas aparecerão aqui após você agendar.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground/70">
+              Nenhuma reserva com esse status.
+            </p>
+          )}
+        </div>
+      )}
+
+      {filteredBookings.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {bookings.map((booking) => (
+          {filteredBookings.map((booking) => (
             <BookingCard
               key={booking.id}
               booking={booking}

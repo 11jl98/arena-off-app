@@ -270,7 +270,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                       <div className="flex flex-col gap-0.5">
                         <p className="text-sm font-medium text-foreground">Cancelamento bloqueado</p>
                         <p className="text-xs text-muted-foreground">
-                          Reservas pagas via PIX não podem ser canceladas pelo app. Entre em contato conosco para solicitar o cancelamento e reembolso.
+                          Reservas pagas pelo app não podem ser canceladas pelo mesmo. Entre em contato conosco para solicitar o cancelamento e reembolso.
                         </p>
                       </div>
                     </div>
