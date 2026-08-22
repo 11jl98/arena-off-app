@@ -80,6 +80,10 @@ const HistoryTab: React.FC<{ onContinuePayment: (booking: Booking) => void }> = 
     queryKey: ['my-bookings'],
     queryFn: () => BookingsService.listMyBookings({ pageSize: 50 }),
     staleTime: 15_000,
+    refetchInterval: (query) => {
+      const rows = query.state.data as Booking[] | undefined;
+      return rows?.some((b) => b.status === 'PENDING') ? 15_000 : false;
+    },
   });
 
   const { mutate: cancelBooking, isPending: cancelling } = useMutation({

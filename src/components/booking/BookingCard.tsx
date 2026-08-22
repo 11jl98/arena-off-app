@@ -5,6 +5,7 @@ import { CalendarDays, Clock, MapPin, DollarSign, Loader2, AlertTriangle } from 
 import type { Booking } from '@/types/booking';
 import { BookingStatusBadge } from './BookingStatusBadge';
 import { isPendingOnlinePayment } from '@/utils/helpers/booking.helper';
+import { usePaymentCountdown } from '@/pages/Reservas/hooks/usePaymentCountdown';
 import { cn } from '@/lib/utils';
 
 interface BookingCardProps {
@@ -30,7 +31,11 @@ export const BookingCard: React.FC<BookingCardProps> = ({
 
   const isPendingUnpaid = isPendingOnlinePayment(booking);
 
-  const showActions = isPendingUnpaid && (onContinuePayment || onCancel);
+  const { expired: pendingExpired } = usePaymentCountdown(
+    isPendingUnpaid ? booking.pendingExpiresAt : null
+  );
+
+  const showActions = isPendingUnpaid && !pendingExpired && (onContinuePayment || onCancel);
 
   return (
     <div
@@ -73,6 +78,12 @@ export const BookingCard: React.FC<BookingCardProps> = ({
           })}
         </span>
       </div>
+
+      {pendingExpired && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <p className="text-xs text-muted-foreground">Pagamento expirado — reserva cancelada.</p>
+        </div>
+      )}
 
       {showActions && (
         <div

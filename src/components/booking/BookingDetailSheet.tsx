@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format, parseISO, addHours, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -86,7 +86,49 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
   const canCancel =
     (isCancellableStatus || isPendingUnpaid) && isCancellableByTime && !isPaidPix;
 
-  const { formatted: countdown } = usePaymentCountdown(booking?.pendingExpiresAt);
+  const { formatted: countdown, expired: countdownExpired } = usePaymentCountdown(
+    booking?.pendingExpiresAt
+  );
+
+  const { mutate: expireOnTimeout } = useMutation({
+    mutationFn: () => BookingsService.cancelBooking(bookingId!),
+    onSuccess: () => {
+      showSuccess('Tempo esgotado. A reserva foi cancelada e o horário liberado.');
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+    },
+    onError: () => {},
+  });
+
+  const expiryHandledRef = useRef(false);
+
+  useEffect(() => {
+    expiryHandledRef.current = false;
+  }, [bookingId]);
+
+  useEffect(() => {
+    if (!open || !booking || !countdownExpired) return;
+    if (!isPendingUnpaid || expiryHandledRef.current) return;
+    expiryHandledRef.current = true;
+
+    const handleExpiry = async () => {
+      try {
+        const fresh = await queryClient.fetchQuery({
+          queryKey: ['booking', booking.id],
+          queryFn: () => BookingsService.getBooking(booking.id),
+          staleTime: 0,
+        });
+        if (fresh.status !== 'PENDING') return;
+        if (!fresh.mpOrderId) {
+          expireOnTimeout();
+        }
+      } catch {
+        expiryHandledRef.current = false;
+      }
+    };
+
+    handleExpiry();
+  }, [open, booking, countdownExpired, isPendingUnpaid, queryClient, expireOnTimeout]);
 
   return (
     <ResponsiveModal open={open} onClose={onClose} title="Detalhes da Reserva">
@@ -172,7 +214,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                 </div>
               </div>
 
-              {isPendingUnpaid && onContinuePayment && (
+              {isPendingUnpaid && !countdownExpired && onContinuePayment && (
                 <div className="flex flex-col gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
@@ -236,7 +278,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
                 </div>
               )}
 
-              {isCancellableStatus && !isCancellableByTime && (
+              {isCancellableStatus && !isCancellableByTime && !isPaidPix && (
                 <div className="pt-2">
                   <div className="flex flex-col gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
                     <div className="flex items-start gap-2">

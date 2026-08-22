@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useQueryClient } from '@tanstack/react-query';
@@ -77,7 +77,51 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
   const { data: polledBooking } = usePaymentStatus(isPolling ? bookingId : null, isPolling);
 
   const expiresAt = createdBooking?.pendingExpiresAt ?? paymentData?.pendingExpiresAt;
-  const { formatted: countdown } = usePaymentCountdown(expiresAt);
+  const { formatted: countdown, expired: countdownExpired } = usePaymentCountdown(expiresAt);
+
+  const expiryHandledRef = useRef(false);
+  useEffect(() => {
+    expiryHandledRef.current = false;
+  }, [bookingId, expiresAt]);
+
+  useEffect(() => {
+    if (!isOnline || !expiresAt || !countdownExpired || !bookingId) return;
+    if (phase === 'success' || phase === 'expired') return;
+    if (expiryHandledRef.current) return;
+    expiryHandledRef.current = true;
+
+    const handleExpiry = async () => {
+      try {
+        const fresh = await BookingsService.getBooking(bookingId);
+        if (fresh.status === 'CONFIRMED') {
+          queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
+          queryClient.invalidateQueries({ queryKey: ['slots'] });
+          updateCreatedBooking(fresh);
+          setPaymentData(null);
+          setPhase('success');
+          return;
+        }
+        if (paymentData) {
+          return;
+        }
+        if (fresh.status !== 'CANCELLED') {
+          await BookingsService.cancelBooking(bookingId);
+        }
+        showSuccess('Tempo esgotado. A reserva foi cancelada e o horário liberado.');
+        queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+        queryClient.invalidateQueries({ queryKey: ['slots'] });
+        queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+        queryClient.invalidateQueries({ queryKey: ['booking-poll', bookingId] });
+        setPaymentData(null);
+        setPhase('expired');
+      } catch {
+        expiryHandledRef.current = false;
+      }
+    };
+
+    handleExpiry();
+  }, [isOnline, expiresAt, countdownExpired, bookingId, phase, paymentData, queryClient, showSuccess, setPaymentData, updateCreatedBooking]);
 
   useEffect(() => {
     if (!polledBooking) return;
@@ -174,9 +218,18 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
       {showCountdownBanner && (
         <div className="w-full max-w-md flex items-center justify-between gap-3 bg-card border border-border rounded-2xl px-4 py-3">
           <div className="flex items-center gap-2 text-sm">
-            <Clock size={15} className="text-primary" />
-            <span className="text-muted-foreground">Tempo para pagar</span>
-            <span className="font-mono font-bold tabular-nums text-foreground">{countdown}</span>
+            {countdownExpired ? (
+              <>
+                <Loader2 size={15} className="animate-spin text-primary" />
+                <span className="text-muted-foreground">Pagamento enviado — confirmando...</span>
+              </>
+            ) : (
+              <>
+                <Clock size={15} className="text-primary" />
+                <span className="text-muted-foreground">Tempo para pagar</span>
+                <span className="font-mono font-bold tabular-nums text-foreground">{countdown}</span>
+              </>
+            )}
           </div>
           <button
             onClick={handleCancel}

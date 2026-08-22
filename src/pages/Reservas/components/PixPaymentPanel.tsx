@@ -83,14 +83,16 @@ export const PixPaymentPanel: React.FC<PixPaymentPanelProps> = ({ paymentData, e
 
       <div className="bg-muted/50 border border-border rounded-2xl px-4 py-3 flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Tempo para pagar</span>
-        <span
-          className={cn(
-            'font-mono text-lg font-bold tabular-nums',
-            expired ? 'text-red-600 dark:text-red-400' : 'text-foreground'
-          )}
-        >
-          {formatted}
-        </span>
+        {expired ? (
+          <span className="flex items-center gap-1.5 text-xs text-yellow-600 dark:text-yellow-400 font-medium">
+            <Loader2 size={12} className="animate-spin" />
+            Confirmando pagamento...
+          </span>
+        ) : (
+          <span className="font-mono text-lg font-bold tabular-nums text-foreground">
+            {formatted}
+          </span>
+        )}
       </div>
     </div>
   );
