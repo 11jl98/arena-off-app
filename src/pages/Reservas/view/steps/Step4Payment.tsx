@@ -37,10 +37,11 @@ const fmt = (reais: number) =>
   reais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function deriveInitialPhase(
-  bookingStatus?: string,
+  bookingStatus: string | undefined,
+  settled: boolean,
   paymentData?: InitiatePaymentResponse | null
 ): Phase {
-  if (bookingStatus === 'CONFIRMED') return 'success';
+  if (bookingStatus === 'CONFIRMED' && settled) return 'success';
   if (bookingStatus === 'CANCELLED') return 'expired';
   if (paymentData) {
     if (paymentData.method === 'PIX') return 'pix';
@@ -59,7 +60,8 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
   const { isSupported, requestPermissionAndSubscribe } = usePushSubscription();
 
   const [phase, setPhase] = useState<Phase>(() =>
-    deriveInitialPhase(createdBooking?.status, paymentData)
+    deriveInitialPhase(createdBooking?.status,
+      !isOnlinePayment(createdBooking) || createdBooking?.paymentStatus === 'PAID', paymentData)
   );
   const [cardType, setCardType] = useState<'credit' | 'debit'>('credit');
   const initiatingRef = useRef(false);
@@ -96,7 +98,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
     const handleExpiry = async () => {
       try {
         const fresh = await BookingsService.getBooking(bookingId);
-        if (fresh.status === 'CONFIRMED') {
+        if (fresh.status === 'CONFIRMED' && fresh.paymentStatus === 'PAID') {
           queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
           queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
           queryClient.invalidateQueries({ queryKey: ['slots'] });
@@ -105,7 +107,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
           setPhase('success');
           return;
         }
-        if (paymentData) {
+        if (paymentData || fresh.status === 'CONFIRMED') {
           return;
         }
         if (fresh.status !== 'CANCELLED') {
@@ -128,7 +130,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
 
   useEffect(() => {
     if (!polledBooking) return;
-    if (polledBooking.status === 'CONFIRMED') {
+    if (polledBooking.status === 'CONFIRMED' && polledBooking.paymentStatus === 'PAID') {
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['slots'] });
