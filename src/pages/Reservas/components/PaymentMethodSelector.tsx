@@ -1,4 +1,5 @@
 import { QrCode, CreditCard, Lock } from 'lucide-react';
+import { FEATURE_FLAGS, ONLINE_PAYMENTS_AVAILABLE } from '@/config/featureFlags';
 import type { OnlinePaymentMethod } from '@/types/payment';
 
 const fmt = (reais: number) =>
@@ -10,6 +11,11 @@ interface PaymentMethodSelectorProps {
 }
 
 export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({ amount, onSelect }) => {
+  if (!ONLINE_PAYMENTS_AVAILABLE) return null;
+
+  const showPix = FEATURE_FLAGS.ONLINE_PAYMENT_PIX_ENABLED;
+  const showCard = FEATURE_FLAGS.ONLINE_PAYMENT_CARD_ENABLED;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -20,53 +26,59 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({ am
         </p>
       </div>
 
-      <button
-        onClick={() => onSelect('PIX')}
-        className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border text-left active:scale-[0.98] transition-transform hover:border-primary/60"
-      >
-        <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <QrCode size={22} />
-        </span>
-        <span className="flex-1 flex flex-col gap-0.5">
-          <span className="font-semibold text-foreground">PIX</span>
-          <span className="text-xs text-muted-foreground">
-            Pague na hora com QR Code pelo app do seu banco.
+      {showPix && (
+        <button
+          onClick={() => onSelect('PIX')}
+          className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border text-left active:scale-[0.98] transition-transform hover:border-primary/60"
+        >
+          <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <QrCode size={22} />
           </span>
-        </span>
-        <span className="text-xs font-semibold text-primary shrink-0">Imediato</span>
-      </button>
+          <span className="flex-1 flex flex-col gap-0.5">
+            <span className="font-semibold text-foreground">PIX</span>
+            <span className="text-xs text-muted-foreground">
+              Pague na hora com QR Code pelo app do seu banco.
+            </span>
+          </span>
+          <span className="text-xs font-semibold text-primary shrink-0">Imediato</span>
+        </button>
+      )}
 
-      <button
-        onClick={() => onSelect('CREDIT_CARD')}
-        className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border text-left active:scale-[0.98] transition-transform hover:border-primary/60"
-      >
-        <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <CreditCard size={22} />
-        </span>
-        <span className="flex-1 flex flex-col gap-0.5">
-          <span className="font-semibold text-foreground">Cartão de crédito</span>
-          <span className="text-xs text-muted-foreground">
-            Pague agora com cartão, à vista.
+      {showCard && (
+        <button
+          onClick={() => onSelect('CREDIT_CARD')}
+          className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border text-left active:scale-[0.98] transition-transform hover:border-primary/60"
+        >
+          <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <CreditCard size={22} />
           </span>
-        </span>
-        <span className="text-xs font-semibold text-primary shrink-0">À vista</span>
-      </button>
+          <span className="flex-1 flex flex-col gap-0.5">
+            <span className="font-semibold text-foreground">Cartão de crédito</span>
+            <span className="text-xs text-muted-foreground">
+              Pague agora com cartão, à vista.
+            </span>
+          </span>
+          <span className="text-xs font-semibold text-primary shrink-0">À vista</span>
+        </button>
+      )}
 
-      <button
-        onClick={() => onSelect('DEBIT_CARD')}
-        className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border text-left active:scale-[0.98] transition-transform hover:border-primary/60"
-      >
-        <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <CreditCard size={22} />
-        </span>
-        <span className="flex-1 flex flex-col gap-0.5">
-          <span className="font-semibold text-foreground">Cartão de débito</span>
-          <span className="text-xs text-muted-foreground">
-            Pague agora na hora com o saldo da sua conta.
+      {showCard && (
+        <button
+          onClick={() => onSelect('DEBIT_CARD')}
+          className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border text-left active:scale-[0.98] transition-transform hover:border-primary/60"
+        >
+          <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <CreditCard size={22} />
           </span>
-        </span>
-        <span className="text-xs font-semibold text-primary shrink-0">À vista</span>
-      </button>
+          <span className="flex-1 flex flex-col gap-0.5">
+            <span className="font-semibold text-foreground">Cartão de débito</span>
+            <span className="text-xs text-muted-foreground">
+              Pague agora na hora com o saldo da sua conta.
+            </span>
+          </span>
+          <span className="text-xs font-semibold text-primary shrink-0">À vista</span>
+        </button>
+      )}
 
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
         <Lock size={12} className="mt-0.5 shrink-0" />

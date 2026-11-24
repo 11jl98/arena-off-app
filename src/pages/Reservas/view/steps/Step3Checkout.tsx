@@ -22,6 +22,7 @@ import { CashbackService } from '@/services/cashback';
 import { PromotionsService } from '@/services/promotions';
 import { BookingsService } from '@/services/bookings';
 import { CourtsService } from '@/services/courts';
+import { ONLINE_PAYMENTS_AVAILABLE } from '@/config/featureFlags';
 import { useUserStore } from '@/store/userStore';
 import { useNotify } from '@/hooks/useNotify';
 import { cn } from '@/lib/utils';
@@ -433,28 +434,30 @@ export const Step3Checkout: React.FC = () => {
       </div>
 
       <div className="flex flex-col gap-4 lg:w-96 lg:shrink-0">
-        <div className="flex flex-col gap-1.5">
-          <button
-            onClick={() => confirmBooking(true)}
-            disabled={isLoading || !selectedSport}
-            className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-3 rounded-xl text-sm disabled:opacity-60 active:scale-[0.98] transition-transform"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Processando...
-              </>
-            ) : (
-              <>
-                <CreditCard size={16} />
-                Pagar agora
-              </>
-            )}
-          </button>
-          <p className="text-center text-xs text-muted-foreground px-2">
-            Ao pagar agora, o horário fica reservado até a confirmação do pagamento.
-          </p>
-        </div>
+        {ONLINE_PAYMENTS_AVAILABLE && (
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={() => confirmBooking(true)}
+              disabled={isLoading || !selectedSport}
+              className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-3 rounded-xl text-sm disabled:opacity-60 active:scale-[0.98] transition-transform"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <CreditCard size={16} />
+                  Pagar agora
+                </>
+              )}
+            </button>
+            <p className="text-center text-xs text-muted-foreground px-2">
+              Ao pagar agora, o horário fica reservado até a confirmação do pagamento.
+            </p>
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button
@@ -474,7 +477,12 @@ export const Step3Checkout: React.FC = () => {
               confirmBooking(false);
             }}
             disabled={isLoading || !selectedSport}
-            className="flex-1 flex items-center justify-center gap-2 border border-border text-foreground font-medium py-3 rounded-xl text-sm disabled:opacity-60 active:scale-[0.98] transition-transform"
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm disabled:opacity-60 active:scale-[0.98] transition-transform',
+              ONLINE_PAYMENTS_AVAILABLE
+                ? 'border border-border text-foreground font-medium'
+                : 'bg-primary text-primary-foreground font-semibold'
+            )}
           >
             <Banknote size={16} />
             Pagar presencial

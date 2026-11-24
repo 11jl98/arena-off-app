@@ -12,6 +12,7 @@ import {
   X,
   XCircle,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
@@ -26,6 +27,7 @@ import { useUserStore } from '@/store/userStore';
 import { useNotify } from '@/hooks/useNotify';
 import { isOnlinePayment, getBookingPaymentLabel } from '@/utils/helpers/booking.helper';
 import { getPaymentErrorMessage } from '@/utils/helpers/payment.helper';
+import { FEATURE_FLAGS, ONLINE_PAYMENTS_AVAILABLE } from '@/config/featureFlags';
 import { cn } from '@/lib/utils';
 import type { InitiatePaymentResponse, OnlinePaymentMethod } from '@/types/payment';
 
@@ -140,6 +142,10 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
 
   const handleSelectMethod = async (m: OnlinePaymentMethod) => {
     if (!createdBooking) return;
+    if (m === 'PIX' && !FEATURE_FLAGS.ONLINE_PAYMENT_PIX_ENABLED) return;
+    if ((m === 'CREDIT_CARD' || m === 'DEBIT_CARD') && !FEATURE_FLAGS.ONLINE_PAYMENT_CARD_ENABLED) {
+      return;
+    }
     if (m === 'CREDIT_CARD' || m === 'DEBIT_CARD') {
       setCardType(m === 'DEBIT_CARD' ? 'debit' : 'credit');
       setPhase('card');
@@ -246,7 +252,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         </div>
       )}
 
-      {phase === 'select' && (
+      {phase === 'select' && ONLINE_PAYMENTS_AVAILABLE && (
         <div className="w-full max-w-md bg-card border border-border rounded-2xl p-5">
           {initiating ? (
             <div className="h-64 flex flex-col items-center justify-center gap-3">
@@ -256,6 +262,17 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
           ) : (
             <PaymentMethodSelector amount={createdBooking.finalAmount} onSelect={handleSelectMethod} />
           )}
+        </div>
+      )}
+
+      {phase === 'select' && !ONLINE_PAYMENTS_AVAILABLE && (
+        <div className="w-full max-w-md bg-card border border-border rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
+          <AlertTriangle size={32} className="text-warning" />
+          <h3 className="font-semibold text-foreground">Pagamento online indisponível</h3>
+          <p className="text-sm text-muted-foreground">
+            As formas de pagamento online estão temporariamente desativadas. Tente novamente em
+            alguns minutos ou cancele a reserva para liberar o horário.
+          </p>
         </div>
       )}
 
