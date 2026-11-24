@@ -62,6 +62,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
     deriveInitialPhase(createdBooking?.status, paymentData)
   );
   const [cardType, setCardType] = useState<'credit' | 'debit'>('credit');
+  const initiatingRef = useRef(false);
   const [initiating, setInitiating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showPushBanner, setShowPushBanner] = useState(() => {
@@ -141,7 +142,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
   }, [polledBooking, queryClient, updateCreatedBooking, setPaymentData]);
 
   const handleSelectMethod = async (m: OnlinePaymentMethod) => {
-    if (!createdBooking) return;
+    if (!createdBooking || initiatingRef.current) return;
     if (m === 'PIX' && !FEATURE_FLAGS.ONLINE_PAYMENT_PIX_ENABLED) return;
     if ((m === 'CREDIT_CARD' || m === 'DEBIT_CARD') && !FEATURE_FLAGS.ONLINE_PAYMENT_CARD_ENABLED) {
       return;
@@ -151,6 +152,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
       setPhase('card');
       return;
     }
+    initiatingRef.current = true;
     setInitiating(true);
     try {
       const data = await PaymentsService.initiatePayment({
@@ -170,6 +172,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         );
       }
     } finally {
+      initiatingRef.current = false;
       setInitiating(false);
     }
   };

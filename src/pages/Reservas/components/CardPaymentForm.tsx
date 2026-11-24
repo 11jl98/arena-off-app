@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CardPayment, initMercadoPago } from '@mercadopago/sdk-react';
 import { Loader2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { PaymentsService } from '@/services/payments';
@@ -30,6 +30,8 @@ export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
   onApproved,
   onInProcess,
 }) => {
+  const submitting = useRef(false);
+  const [busy, setBusy] = useState(false);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [loadingKey, setLoadingKey] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +66,9 @@ export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
       cardData: { token: string; installments: number; payment_method_id?: string },
       additionalData?: { paymentTypeId?: string }
     ) => {
+      if (submitting.current) return;
+      submitting.current = true;
+      setBusy(true);
       setError(null);
       const isDebit =
         additionalData?.paymentTypeId === 'debit_card' ||
@@ -101,6 +106,9 @@ export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
         );
         // Rejeitar a promise faz o brick resetar o formulário para nova tentativa.
         throw err;
+      } finally {
+        submitting.current = false;
+        setBusy(false);
       }
     },
     [bookingId, payerEmail, onApproved, onInProcess]
@@ -172,6 +180,7 @@ export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
         <p className="text-xs text-muted-foreground mb-3">
           Você será cobrado à vista em {fmt(amount)}.
         </p>
+        <fieldset disabled={busy} aria-busy={busy}>
         <CardPayment
           initialization={initialization}
           customization={customization}
@@ -180,6 +189,7 @@ export const CardPaymentForm: React.FC<CardPaymentFormProps> = ({
           onError={onError}
           onSubmit={handleSubmit}
         />
+        </fieldset>
       </div>
 
       <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
