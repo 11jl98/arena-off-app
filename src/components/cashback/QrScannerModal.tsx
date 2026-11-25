@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ResponsiveModal } from '@/components/ui/responsive-modal';
@@ -102,7 +102,10 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
     }
 
     try {
-      const scanner = new Html5Qrcode(elementId);
+      const scanner = new Html5Qrcode(elementId, {
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        verbose: false,
+      });
       scannerRef.current = scanner;
 
       const onScanSuccess = (decodedText: string) => {
@@ -128,6 +131,11 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
 
       const scanConfig = {
         fps: 15,
+        qrbox: (width: number, height: number) => {
+          // The camera surface is twice the visible width to retain more detail when decoding.
+          const side = Math.floor(Math.min(width / 2, height) * 0.7);
+          return { width: side, height: side };
+        },
         videoConstraints: {
           facingMode: { ideal: 'environment' },
           width: { ideal: 1280 },
@@ -232,12 +240,10 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
                   </button>
                 </div>
               ) : (
-                <div className="w-full relative">
-                  <div
-                    id="qr-reader"
-                    className="w-full rounded-2xl overflow-hidden"
-                    style={{ minHeight: 'min(200px, 30dvh)' }}
-                  />
+                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-black">
+                  <div className="absolute left-1/2 top-1/2 w-[200%] -translate-x-1/2 -translate-y-1/2">
+                    <div id="qr-reader" className="w-full" />
+                  </div>
                   {!isScanning && !permissionError && !isProcessing && (
                     <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-2xl">
                       <Loader2 size={28} className="animate-spin text-primary" />
@@ -253,7 +259,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
               )}
 
               <p className="text-xs text-muted-foreground text-center px-4">
-                Mantenha o QR Code inteiro na tela. Se a imagem ficar desfocada, afaste o celular devagar até o código ficar nítido.
+                Centralize o QR Code no quadrado, com a margem branca visível. Ele pode ocupar só uma parte do quadrado.
               </p>
             </>
           )}
