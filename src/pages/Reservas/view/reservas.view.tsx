@@ -1,18 +1,20 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Loader2, CalendarDays, History, Plus } from 'lucide-react';
+import { useNotify } from '@/hooks/useNotify';
 import { BookingFlowProvider, useBookingFlow } from '@/hooks/useBookingFlow';
 import { Step1Courts } from './steps/Step1Courts';
 import { Step2DateTime } from './steps/Step2DateTime';
 import { Step3Checkout } from './steps/Step3Checkout';
-import { Step4Success } from './steps/Step4Success';
+import { Step4Payment } from './steps/Step4Payment';
 import { BookingCard } from '@/components/booking/BookingCard';
 import { BookingDetailSheet } from '@/components/booking/BookingDetailSheet';
 import { BookingsService } from '@/services/bookings';
 import { cn } from '@/lib/utils';
+import type { Booking, BookingStatus } from '@/types/booking';
 
-const STEP_TITLES = ['Escolha a quadra', 'Data e horário', 'Confirmação', 'Reservado!'];
+const STEP_TITLES = ['Escolha a quadra', 'Data e horário', 'Confirmação', 'Finalizar'];
 
 const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory }) => {
   const { step, goBack, reset } = useBookingFlow();
@@ -61,21 +63,73 @@ const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory 
       {step === 1 && <Step1Courts />}
       {step === 2 && <Step2DateTime />}
       {step === 3 && <Step3Checkout />}
-      {step === 4 && <Step4Success onViewHistory={onViewHistory} />}
+      {step === 4 && <Step4Payment onViewHistory={onViewHistory} />}
     </div>
   );
 };
 
-const HistoryTab: React.FC = () => {
+const HistoryTab: React.FC<{ onContinuePayment: (booking: Booking) => void }> = ({
+  onContinuePayment,
+}) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<BookingStatus | 'all'>('all');
+  const { success: showSuccess, error: showError } = useNotify();
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ['my-bookings'],
     queryFn: () => BookingsService.listMyBookings({ pageSize: 50 }),
     staleTime: 15_000,
+    refetchInterval: (query) => {
+      const rows = query.state.data as Booking[] | undefined;
+      return rows?.some((b) => b.status === 'PENDING') ? 15_000 : false;
+    },
   });
 
-  const bookings = data ?? [];
+  const { mutate: cancelBooking, isPending: cancelling } = useMutation({
+    mutationFn: (booking: Booking) => BookingsService.cancelBooking(booking.id),
+    onSuccess: () => {
+      showSuccess('Reserva cancelada com sucesso.');
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking'] });
+    },
+    onError: (err: Error) => {
+      const msg =
+        (err as unknown as { status?: number }).status === 403 ||
+        err.message?.includes('403') ||
+        err.message?.toLowerCase().includes('own bookings')
+          ? 'Você não pode cancelar a reserva de outro cliente.'
+          : err.message || 'Erro ao cancelar reserva.';
+      showError(msg);
+    },
+  });
+
+  const bookings = useMemo(() => data ?? [], [data]);
+
+  const FILTERS: { value: BookingStatus | 'all'; label: string }[] = [
+    { value: 'all', label: 'Todas' },
+    { value: 'PENDING', label: 'Pendentes' },
+    { value: 'CONFIRMED', label: 'Confirmadas' },
+    { value: 'CANCELLED', label: 'Canceladas' },
+  ];
+
+  const filteredBookings = useMemo(() => {
+    const filtered =
+      filter === 'all' ? bookings : bookings.filter((b) => b.status === filter);
+    return [...filtered].sort((a, b) => {
+      if (a.status === 'PENDING' && b.status !== 'PENDING') return -1;
+      if (b.status === 'PENDING' && a.status !== 'PENDING') return 1;
+      return 0;
+    });
+  }, [bookings, filter]);
+
+  const handleCancel = (booking: Booking) => {
+    cancelBooking(booking, {
+      onSuccess: () => {
+        if (selectedId === booking.id) setSelectedId(null);
+      },
+    });
+  };
 
   return (
     <>
@@ -85,23 +139,51 @@ const HistoryTab: React.FC = () => {
         </div>
       )}
 
-      {!isLoading && bookings.length === 0 && (
-        <div className="flex flex-col items-center gap-3 py-14 text-center">
-          <CalendarDays size={40} className="text-muted-foreground/40" />
-          <p className="text-muted-foreground text-sm">Nenhuma reserva encontrada.</p>
-          <p className="text-xs text-muted-foreground/70">
-            Suas reservas aparecerão aqui após você agendar.
-          </p>
+      {!isLoading && bookings.length > 0 && (
+        <div className="flex gap-2 mb-4">
+          {FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={cn(
+                'flex-1 py-2 rounded-xl text-xs font-medium transition-all duration-150 border',
+                filter === f.value
+                  ? 'bg-primary text-primary-foreground border-primary shadow'
+                  : 'bg-card text-muted-foreground border-border'
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {bookings.length > 0 && (
+      {!isLoading && filteredBookings.length === 0 && (
+        <div className="flex flex-col items-center gap-3 py-14 text-center">
+          <CalendarDays size={40} className="text-muted-foreground/40" />
+          <p className="text-muted-foreground text-sm">Nenhuma reserva encontrada.</p>
+          {bookings.length === 0 ? (
+            <p className="text-xs text-muted-foreground/70">
+              Suas reservas aparecerão aqui após você agendar.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground/70">
+              Nenhuma reserva com esse status.
+            </p>
+          )}
+        </div>
+      )}
+
+      {filteredBookings.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {bookings.map((booking) => (
+          {filteredBookings.map((booking) => (
             <BookingCard
               key={booking.id}
               booking={booking}
               onClick={() => setSelectedId(booking.id)}
+              onContinuePayment={onContinuePayment}
+              onCancel={handleCancel}
+              cancelling={cancelling}
             />
           ))}
         </div>
@@ -110,6 +192,10 @@ const HistoryTab: React.FC = () => {
       <BookingDetailSheet
         bookingId={selectedId}
         onClose={() => setSelectedId(null)}
+        onContinuePayment={(booking) => {
+          setSelectedId(null);
+          onContinuePayment(booking);
+        }}
       />
     </>
   );
@@ -117,9 +203,15 @@ const HistoryTab: React.FC = () => {
 
 type ActiveTab = 'nova' | 'historico';
 
-export const ReservasView: React.FC = () => {
+const ReservasContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('nova');
   const { isStandalone } = useDeviceDetection();
+  const { resumeBooking } = useBookingFlow();
+
+  const handleContinuePayment = (booking: Booking) => {
+    resumeBooking(booking);
+    setActiveTab('nova');
+  };
 
   return (
     <div className="flex flex-col min-h-full">
@@ -164,13 +256,19 @@ export const ReservasView: React.FC = () => {
 
       <div className="flex-1 mx-auto w-full max-w-5xl px-4 lg:px-8 pb-4">
         {activeTab === 'nova' ? (
-          <BookingFlowProvider>
-            <WizardContent onViewHistory={() => setActiveTab('historico')} />
-          </BookingFlowProvider>
+          <WizardContent onViewHistory={() => setActiveTab('historico')} />
         ) : (
-          <HistoryTab />
+          <HistoryTab onContinuePayment={handleContinuePayment} />
         )}
       </div>
     </div>
+  );
+};
+
+export const ReservasView: React.FC = () => {
+  return (
+    <BookingFlowProvider>
+      <ReservasContent />
+    </BookingFlowProvider>
   );
 };

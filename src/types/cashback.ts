@@ -30,6 +30,8 @@ export interface CashbackWallet {
 }
 
 export interface CashbackTransaction {
+  outstanding?: number;
+  notes?: string;
   id: string;
   walletId: string;
   type: CashbackTransactionType;

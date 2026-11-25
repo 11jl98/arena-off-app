@@ -9,6 +9,7 @@ import { AuthService } from '@/services/auth';
 import { useUserStore } from '@/store/userStore';
 import { useNotify } from '@/hooks/useNotify';
 import { cn } from '@/lib/utils';
+import { isValidCPF } from '@/utils/helpers/cpf.helper';
 
 
 const CPF_REGEX = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
@@ -18,7 +19,8 @@ const schema = z.object({
   cpf: z
     .string()
     .min(1, 'CPF é obrigatório')
-    .regex(CPF_REGEX, 'CPF inválido. Use o formato 000.000.000-00'),
+    .regex(CPF_REGEX, 'CPF inválido. Use o formato 000.000.000-00')
+    .refine((value) => isValidCPF(value), 'CPF inválido — confira os números digitados'),
   phone: z
     .string()
     .min(1, 'Telefone é obrigatório')

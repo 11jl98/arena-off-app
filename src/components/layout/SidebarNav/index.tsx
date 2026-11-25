@@ -58,13 +58,10 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ onOpenNotifications }) =
       </nav>
 
       <div className="px-3 pb-4 flex flex-col gap-1 shrink-0">
-        <button
-          onClick={onOpenNotifications}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors duration-150"
-        >
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors duration-150">
           <NotificationBell onClick={onOpenNotifications} className="bg-transparent p-0 hover:bg-transparent" />
           <span className="text-sm font-medium">Notificações</span>
-        </button>
+        </div>
 
         <div className="flex items-center gap-3 px-3 py-3 mt-1 border-t border-border">
           {avatarSrc ? (

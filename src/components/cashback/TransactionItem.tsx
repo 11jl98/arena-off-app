@@ -37,6 +37,8 @@ interface TransactionItemProps {
 
 export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
   const config = TYPE_CONFIG[transaction.type];
+  const earned = transaction.amount > 0;
+  const description = transaction.notes || transaction.description;
   const Icon = config.icon;
 
   return (
@@ -44,7 +46,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
       <div
         className={cn(
           'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-          config.earned
+          earned
             ? 'bg-green-100 dark:bg-green-900/30'
             : 'bg-red-100 dark:bg-red-900/30'
         )}
@@ -52,7 +54,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
         <Icon
           size={15}
           className={
-            config.earned
+            earned
               ? 'text-green-600 dark:text-green-400'
               : 'text-red-500 dark:text-red-400'
           }
@@ -68,9 +70,10 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
             </span>
           )}
         </div>
-        {transaction.description && (
-          <p className="text-xs text-muted-foreground truncate">{transaction.description}</p>
+        {description && (
+          <p className="text-xs text-muted-foreground truncate">{description}</p>
         )}
+        {!!transaction.outstanding && <p className="text-xs">A compensar: {fmt(transaction.outstanding)}</p>}
         <p className="text-xs text-muted-foreground">
           {format(new Date(transaction.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
         </p>
@@ -79,12 +82,12 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
       <span
         className={cn(
           'text-sm font-bold shrink-0',
-          config.earned
+          earned
             ? 'text-green-600 dark:text-green-400'
             : 'text-red-500 dark:text-red-400'
         )}
       >
-        {config.earned ? '+' : '-'}
+        {earned ? '+' : '-'}
         {fmt(Math.abs(transaction.amount))}
       </span>
     </div>

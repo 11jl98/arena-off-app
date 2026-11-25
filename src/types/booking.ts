@@ -38,7 +38,7 @@ export interface Booking {
   updatedAt: string;
   confirmedAt?: string;
   cancelledAt?: string;
-  /** @deprecated Auto-confirm migration — always null. Removed in future API version. */
+  /** Expiry for online (payOnline) bookings awaiting payment — null otherwise */
   pendingExpiresAt?: string;
   /** Mercado Pago order ID — set when payment is initiated */
   mpOrderId?: string;
@@ -64,6 +64,8 @@ export interface CreateBookingPayload {
   promotionId?: string;
   cashbackUsed?: number;
   paymentMethod?: PaymentMethod;
+  /** When true, booking is created PENDING (slot held) until payment is confirmed */
+  payOnline?: boolean;
   notes?: string;
 }
 

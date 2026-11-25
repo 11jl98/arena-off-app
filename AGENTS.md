@@ -167,6 +167,7 @@ src/
 │   └── WavePattern/
 │
 ├── config/                  # Configurações
+│   ├── featureFlags.ts      # Feature flags (pagamentos online, etc.)
 │   └── firebase.ts
 │
 ├── hooks/                   # Hooks globais
