@@ -74,3 +74,13 @@ export interface TransactionFilters {
   endDate?: string;
   limit?: number;
 }
+
+export interface ReceiptPhotoJob {
+  id: string;
+  status: 'PENDING' | 'CREDITED' | 'REJECTED';
+  createdAt: string;
+  purpose: CashbackPurpose;
+  message: string | null;
+  cashback: string | null;
+  amount: string | null;
+}

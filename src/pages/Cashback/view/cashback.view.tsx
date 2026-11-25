@@ -1,11 +1,12 @@
-﻿import { useState, useEffect } from 'react';
+import { ReceiptCamera } from '@/components/cashback/ReceiptPhotoPreview';
+import { useState, useEffect } from 'react';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
-import { useQuery } from '@tanstack/react-query';
-import { ScanLine, Loader2, Receipt, ChevronDown, ChevronUp } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Camera, Loader2, Receipt, ChevronDown, ChevronUp } from 'lucide-react';
 import { WalletCard } from '@/components/cashback/WalletCard';
 import { WalletInfoCards } from '@/components/cashback/WalletInfoCards';
 import { TransactionItem } from '@/components/cashback/TransactionItem';
-import { QrScannerModal } from '@/components/cashback/QrScannerModal';
+import { useUserStore } from '@/store/userStore';
 import { DualCashbackOnboarding, hasSeenDualCashbackOnboarding } from '@/components/cashback/DualCashbackOnboarding';
 import { CashbackService } from '@/services/cashback';
 import { cn } from '@/lib/utils';
@@ -38,7 +39,26 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
   loadingConfig,
   staffClientId,
 }) => {
-  const [scannerOpen, setScannerOpen] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const user = useUserStore(s => s.user);
+  const queries = useQueryClient();
+  const photos = useQuery({
+    queryKey: ['receipt-photos', user?.id],
+    queryFn: CashbackService.getReceiptPhotos,
+    enabled: user?.role === 'CLIENT',
+    refetchInterval: query => {
+      const jobs = query.state.data ?? [];
+      if (jobs.some(job => job.status === 'PENDING')) return 2500;
+      return false;
+    },
+  });
+  const latestCredit = photos.data?.filter(job => job.status === 'CREDITED').map(job => job.id).join(',');
+  useEffect(() => {
+    if (latestCredit) {
+      void queries.invalidateQueries({ queryKey: ['cashback-wallet'] });
+      void queries.invalidateQueries({ queryKey: ['cashback-transactions'] });
+    }
+  }, [latestCredit, queries]);
   const [purposeTab, setPurposeTab] = useState<PurposeTab>(TAB_ALL);
   const [showFullExtract, setShowFullExtract] = useState(false);
   const { isStandalone, isDesktop } = useDeviceDetection();
@@ -76,7 +96,7 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
           <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 pb-14">
             <h1 className="text-xl font-bold text-white">Meu Cashback</h1>
             <p className="text-white/80 text-sm mt-0.5">
-              Escaneie notas e acumule créditos
+              Fotografe cupons e acumule créditos
             </p>
           </div>
         </div>
@@ -98,10 +118,10 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
         )}
 
         <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 mb-6">
-          <button
+          {user?.role === 'CLIENT' && <button
             onClick={() => {
               if (!cashbackEnabled) return;
-              setScannerOpen(true);
+              setPhotoOpen(true);
             }}
             disabled={!cashbackEnabled}
             className={cn(
@@ -112,9 +132,17 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
             )}
             title={!cashbackEnabled ? 'Cashback indisponível no momento' : undefined}
           >
-            <ScanLine size={18} />
-            {cashbackEnabled ? 'Escanear nota fiscal' : 'Cashback indisponível'}
-          </button>
+            <Camera size={18} />
+            {cashbackEnabled ? 'Fotografar cupom' : 'Cashback indisponível'}
+          </button>}
+          {photoOpen && user && <ReceiptCamera clientId={user.id} barEnabled={barEnabled} onClose={() => setPhotoOpen(false)} />}
+          {photos.data?.slice(0, 5).map(job => (
+            <p key={job.id} role="status" className="mt-2 rounded-xl border bg-card px-3 py-2 text-sm">
+              Cupom de {new Date(job.createdAt).toLocaleString('pt-BR')} · {job.status === 'PENDING' ? 'Em análise' :
+                job.status === 'CREDITED' ? 'Cashback creditado: ' + Number(job.cashback).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) :
+                job.message || 'Não foi possível creditar este cupom.'}
+            </p>
+          ))}
         </div>
 
         <div className="flex-1 mx-auto w-full max-w-5xl px-4 lg:px-8">
@@ -152,7 +180,7 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
               <p className="text-xs text-muted-foreground/70">
                 {purposeTab
                   ? `Nenhuma transação com destino em ${purposeTab === 'COURT' ? 'Quadra' : 'Bar'}.`
-                  : 'Escaneie uma nota fiscal para ganhar seu primeiro cashback!'}
+                  : 'Fotografe um cupom para ganhar seu primeiro cashback!'}
               </p>
             </div>
           )}
@@ -194,13 +222,7 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
         onClose={() => setShowOnboarding(false)}
       />
 
-      <QrScannerModal
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        barEnabled={barEnabled}
-        cashbackEnabled={cashbackEnabled}
-        staffClientId={staffClientId}
-      />
+
     </>
   );
 };

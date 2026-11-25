@@ -1,6 +1,8 @@
 import { httpClient } from './api';
 import type {
   CashbackWallet,
+  ReceiptPhotoJob,
+  CashbackPurpose,
   CashbackConfig,
   CashbackTransaction,
   QrReceipt,
@@ -28,6 +30,16 @@ export const CashbackService = {
     if (filters?.endDate) params.endDate = filters.endDate;
     params.limit = String(filters?.limit ?? 50);
     return httpClient.get<CashbackTransaction[]>('/cashback/transactions', { params });
+  },
+
+  async submitPhoto(id: string, photo: Blob, purpose: CashbackPurpose) {
+    const form = new FormData();
+    form.append('photo', photo, 'cupom.jpg');
+    return httpClient.postFormData<ReceiptPhotoJob>(`/cashback/receipt-photo/${id}?purpose=${purpose}`, form);
+  },
+
+  getReceiptPhotos() {
+    return httpClient.get<ReceiptPhotoJob[]>('/cashback/receipt-photos');
   },
 
   async scanQrReceipt(payload: ScanQrReceiptPayload): Promise<ScanQrReceiptResponse> {
