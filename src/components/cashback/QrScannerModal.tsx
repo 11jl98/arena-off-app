@@ -131,6 +131,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
 
       const scanConfig = {
         fps: 15,
+        disableFlip: true,
         qrbox: (width: number, height: number) => {
           // The camera surface is twice the visible width to retain more detail when decoding.
           const side = Math.floor(Math.min(width / 2, height) * 0.7);
@@ -144,21 +145,12 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
         } as MediaTrackConstraints,
       };
 
-      try {
-        await scanner.start(
-          { facingMode: { exact: 'environment' } } as { facingMode: ConstrainDOMString },
-          scanConfig,
-          onScanSuccess,
-          undefined
-        );
-      } catch {
-        await scanner.start(
-          { facingMode: 'environment' },
-          scanConfig,
-          onScanSuccess,
-          undefined
-        );
-      }
+      await scanner.start(
+        { facingMode: 'environment' },
+        scanConfig,
+        onScanSuccess,
+        undefined
+      );
 
       scanningRef.current = true;
       setIsScanning(true);
@@ -181,8 +173,16 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
       setStep('SCAN');
       setScannedData(null);
       setScanResult(null);
-      const timer = setTimeout(() => startScanner(), 500);
-      return () => clearTimeout(timer);
+      let frame: number;
+      const startWhenVisible = () => {
+        if (document.getElementById('qr-reader')?.clientWidth) {
+          void startScanner();
+        } else {
+          frame = requestAnimationFrame(startWhenVisible);
+        }
+      };
+      frame = requestAnimationFrame(startWhenVisible);
+      return () => cancelAnimationFrame(frame);
     } else {
       stopScanner();
     }
