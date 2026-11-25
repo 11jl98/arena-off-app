@@ -58,6 +58,7 @@ export interface QrReceipt {
 export interface ScanQrReceiptPayload {
   receiptData: string;
   purpose: CashbackPurpose;
+  amount?: number;
 }
 
 export interface ScanQrReceiptResponse {

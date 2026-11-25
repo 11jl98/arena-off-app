@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import fs from 'fs';
 import { visualizer } from 'rollup-plugin-visualizer';
 
 const API_PROXY_TARGET = process.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
+const certPath = './cert/192.168.15.2.pem';
+const keyPath = './cert/192.168.15.2-key.pem';
+const hasLocalCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,6 +18,12 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
       'Cross-Origin-Embedder-Policy': 'unsafe-none',
     },
+    https: hasLocalCerts
+      ? {
+          cert: fs.readFileSync(certPath),
+          key: fs.readFileSync(keyPath),
+        }
+      : undefined,
     proxy: {
       '/api': {
         target: API_PROXY_TARGET,
@@ -32,6 +43,7 @@ export default defineConfig({
       filename: 'sw.ts',
       injectManifest: {
         injectionPoint: 'self.__WB_MANIFEST',
+        globIgnores: ['**/ort-wasm-simd-threaded-*.wasm', '**/en_PP-OCRv5_mobile_rec-*.onnx'],
       },
       includeAssets: [
         'logo.jpg',

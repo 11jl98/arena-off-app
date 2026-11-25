@@ -3,7 +3,7 @@
 import { clientsClaim } from 'workbox-core';
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { registerRoute, NavigationRoute } from 'workbox-routing';
-import { NetworkFirst } from 'workbox-strategies';
+import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
@@ -34,6 +34,34 @@ registerRoute(
       new ExpirationPlugin({
         maxEntries: 50,
         maxAgeSeconds: 86400,
+      }),
+      new CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+    ],
+  }),
+  'GET'
+);
+
+registerRoute(
+  ({ url }) => url.origin === self.location.origin &&
+    /^\/assets\/(?:en_PP-OCRv5_mobile_rec|ort-wasm-simd-threaded)-[^/]+\.(?:onnx|wasm|mjs)$/.test(url.pathname),
+  new CacheFirst({
+    cacheName: 'receipt-ocr-models',
+    plugins: [new ExpirationPlugin({ maxEntries: 6 })],
+  }),
+);
+
+registerRoute(
+  ({ url }) =>
+    url.hostname !== self.location.hostname &&
+    url.pathname.toLowerCase().includes('tesseract'),
+  new CacheFirst({
+    cacheName: 'tesseract-assets',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 30,
+        maxAgeSeconds: 365 * 24 * 60 * 60,
       }),
       new CacheableResponsePlugin({
         statuses: [0, 200],
