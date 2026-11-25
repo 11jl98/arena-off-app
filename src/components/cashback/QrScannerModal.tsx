@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -128,11 +128,11 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
 
       const scanConfig = {
         fps: 15,
-        qrbox: { width: 300, height: 300 },
         videoConstraints: {
           facingMode: { ideal: 'environment' },
           width: { ideal: 1280 },
           height: { ideal: 980 },
+          advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet & { focusMode: string }],
         } as MediaTrackConstraints,
       };
 
@@ -253,7 +253,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ open, onClose, b
               )}
 
               <p className="text-xs text-muted-foreground text-center px-4">
-                O QR Code geralmente está no rodapé da nota fiscal ou cupom eletrônico.
+                Mantenha o QR Code inteiro na tela. Se a imagem ficar desfocada, afaste o celular devagar até o código ficar nítido.
               </p>
             </>
           )}
