@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useUserStore } from '@/store/userStore';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Loader2, CalendarDays, History, Plus } from 'lucide-react';
@@ -62,7 +63,7 @@ const WizardContent: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory 
 
       {step === 1 && <Step1Courts />}
       {step === 2 && <Step2DateTime />}
-      {step === 3 && <Step3Checkout />}
+      {step === 3 && <Step3Checkout onViewHistory={onViewHistory} />}
       {step === 4 && <Step4Payment onViewHistory={onViewHistory} />}
     </div>
   );
@@ -76,13 +77,16 @@ const HistoryTab: React.FC<{ onContinuePayment: (booking: Booking) => void }> = 
   const { success: showSuccess, error: showError } = useNotify();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['my-bookings'],
-    queryFn: () => BookingsService.listMyBookings({ pageSize: 50 }),
+  const clientId = useUserStore((state) => state.user?.id);
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['my-bookings', clientId],
+    queryFn: () => BookingsService.listMyBookings({ clientId: clientId! }),
+    enabled: !!clientId,
     staleTime: 15_000,
+    refetchOnWindowFocus: true,
     refetchInterval: (query) => {
       const rows = query.state.data as Booking[] | undefined;
-      return rows?.some((b) => b.status === 'PENDING') ? 15_000 : false;
+      return rows?.some((b) => b.status === 'PENDING') ? 5_000 : false;
     },
   });
 
@@ -158,7 +162,13 @@ const HistoryTab: React.FC<{ onContinuePayment: (booking: Booking) => void }> = 
         </div>
       )}
 
-      {!isLoading && filteredBookings.length === 0 && (
+      {isError && (
+        <div role="alert" className="text-center py-4 text-sm">
+          <p>Falha ao carregar suas reservas.</p>
+          <button onClick={() => refetch()} className="mt-2 text-primary">Tentar novamente</button>
+        </div>
+      )}
+      {!!clientId && !isLoading && !isError && filteredBookings.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-14 text-center">
           <CalendarDays size={40} className="text-muted-foreground/40" />
           <p className="text-muted-foreground text-sm">Nenhuma reserva encontrada.</p>

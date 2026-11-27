@@ -1,27 +1,25 @@
 import { useEffect, useState } from 'react';
 
 export function usePaymentCountdown(expiresAt?: string | null) {
-  const [remainingMs, setRemainingMs] = useState<number>(() => {
-    if (!expiresAt) return 0;
-    return Math.max(0, new Date(expiresAt).getTime() - Date.now());
-  });
+  const [, refreshClock] = useState(0);
+  const deadline = expiresAt ? Date.parse(expiresAt) : NaN;
+  const hasDeadline = Number.isFinite(deadline);
+  const remainingMs = hasDeadline ? Math.max(0, deadline - Date.now()) : 0;
+  const running = remainingMs > 0;
 
   useEffect(() => {
-    if (!expiresAt) return;
-    const compute = () =>
-      setRemainingMs(Math.max(0, new Date(expiresAt).getTime() - Date.now()));
-    compute();
-    const interval = setInterval(compute, 1000);
+    if (!running) return;
+    const interval = setInterval(() => refreshClock(tick => tick + 1), 1000);
     return () => clearInterval(interval);
-  }, [expiresAt]);
+  }, [running]);
 
-  const totalSeconds = Math.floor(remainingMs / 1000);
+  const totalSeconds = Math.ceil(remainingMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
 
   return {
     remainingMs,
-    expired: remainingMs <= 0,
-    formatted: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
+    expired: hasDeadline && !running,
+    formatted: !hasDeadline ? '--:--' : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`,
   };
 }

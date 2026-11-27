@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test:payment-status": "node --test src/components/cashback/transaction-label.test.mjs",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },

@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Copy, ExternalLink, Loader2, QrCode } from 'lucide-react';
+import { Copy, ExternalLink, Loader2, QrCode, Gift, Receipt } from 'lucide-react';
 import { usePaymentCountdown } from '@/pages/Reservas/hooks/usePaymentCountdown';
 import { cn } from '@/lib/utils';
 import type { InitiatePaymentResponse } from '@/types/payment';
+
+const fmt = (reais: number) =>
+  reais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 interface PixPaymentPanelProps {
   paymentData: InitiatePaymentResponse;
@@ -12,6 +15,11 @@ interface PixPaymentPanelProps {
 export const PixPaymentPanel: React.FC<PixPaymentPanelProps> = ({ paymentData, expiresAt }) => {
   const [copied, setCopied] = useState(false);
   const { formatted, expired } = usePaymentCountdown(expiresAt);
+
+  const base = paymentData.amount ?? 0;
+  const fee = paymentData.fee ?? 0;
+  const total = paymentData.totalAmount ?? base + fee;
+  const cashback = paymentData.estimatedCashback ?? 0;
 
   const handleCopy = async () => {
     try {
@@ -47,7 +55,7 @@ export const PixPaymentPanel: React.FC<PixPaymentPanelProps> = ({ paymentData, e
           )}
 
           <div className="w-full flex flex-col gap-1.5">
-            <p className="text-xs text-muted-foreground font-medium">Chave PIX (Cópia e Cola)</p>
+            <p className="text-xs text-muted-foreground font-medium">PIX (Cópia e Cola)</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-muted rounded-xl px-3 py-2 text-xs font-mono text-foreground truncate">
                 {paymentData.pixQrCode}
@@ -79,7 +87,40 @@ export const PixPaymentPanel: React.FC<PixPaymentPanelProps> = ({ paymentData, e
             </a>
           )}
         </div>
+
+        <div className="px-5 pb-5 flex flex-col gap-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Receipt size={13} />
+              Reserva
+            </span>
+            <span className="font-medium text-foreground">{fmt(base)}</span>
+          </div>
+          {fee > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Taxa PIX (0,90%)</span>
+              <span className="font-medium text-foreground">{fmt(fee)}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between text-sm pt-2 border-t border-border">
+            <span className="font-semibold text-foreground">Total</span>
+            <span className="font-bold text-primary">{fmt(total)}</span>
+          </div>
+        </div>
       </div>
+
+      {cashback > 0 && (
+        <div className="flex items-start gap-2.5 rounded-2xl border border-green-500/30 bg-green-50 dark:bg-green-900/20 px-4 py-3">
+          <Gift size={16} className="text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+          <p className="text-xs leading-snug text-green-700 dark:text-green-300">
+            <strong className="font-semibold">
+              Ao pagar você ganha {fmt(cashback)} de cashback
+            </strong>{' '}
+            para usar nas próximas reservas
+            {paymentData.cashbackPurpose === 'BAR' ? ' e no bar' : ' de quadra'}.
+          </p>
+        </div>
+      )}
 
       <div className="bg-muted/50 border border-border rounded-2xl px-4 py-3 flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Tempo para pagar</span>

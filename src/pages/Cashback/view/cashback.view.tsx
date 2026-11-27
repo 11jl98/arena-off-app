@@ -1,13 +1,14 @@
 ﻿import { useState, useEffect } from 'react';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useQuery } from '@tanstack/react-query';
-import { ScanLine, Loader2, Receipt, ChevronDown, ChevronUp } from 'lucide-react';
+import { ScanLine, Loader2, Receipt, ChevronDown, ChevronUp, Gift, Smartphone } from 'lucide-react';
 import { WalletCard } from '@/components/cashback/WalletCard';
 import { WalletInfoCards } from '@/components/cashback/WalletInfoCards';
 import { TransactionItem } from '@/components/cashback/TransactionItem';
 import { QrScannerModal } from '@/components/cashback/QrScannerModal';
 import { DualCashbackOnboarding, hasSeenDualCashbackOnboarding } from '@/components/cashback/DualCashbackOnboarding';
 import { CashbackService } from '@/services/cashback';
+import { FEATURE_FLAGS } from '@/config/featureFlags';
 import { cn } from '@/lib/utils';
 import type { CashbackConfig, CashbackWallet, CashbackPurpose } from '@/types/cashback';
 
@@ -76,7 +77,7 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
           <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 pb-14">
             <h1 className="text-xl font-bold text-white">Meu Cashback</h1>
             <p className="text-white/80 text-sm mt-0.5">
-              Escaneie notas e acumule créditos
+              Acumule créditos pagando suas reservas online
             </p>
           </div>
         </div>
@@ -97,25 +98,47 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
           </div>
         )}
 
-        <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 mb-6">
-          <button
-            onClick={() => {
-              if (!cashbackEnabled) return;
-              setScannerOpen(true);
-            }}
-            disabled={!cashbackEnabled}
-            className={cn(
-              'w-full flex items-center justify-center gap-3 font-semibold py-3 rounded-2xl shadow-lg shadow-primary/25 transition-all',
-              cashbackEnabled
-                ? 'bg-primary text-primary-foreground active:scale-[0.98]'
-                : 'bg-muted text-muted-foreground cursor-not-allowed'
-            )}
-            title={!cashbackEnabled ? 'Cashback indisponível no momento' : undefined}
-          >
-            <ScanLine size={18} />
-            {cashbackEnabled ? 'Escanear nota fiscal' : 'Cashback indisponível'}
-          </button>
-        </div>
+        {FEATURE_FLAGS.QR_RECEIPT_SCAN_ENABLED && (
+          <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 mb-6">
+            <button
+              onClick={() => {
+                if (!cashbackEnabled) return;
+                setScannerOpen(true);
+              }}
+              disabled={!cashbackEnabled}
+              className={cn(
+                'w-full flex items-center justify-center gap-3 font-semibold py-3 rounded-2xl shadow-lg shadow-primary/25 transition-all',
+                cashbackEnabled
+                  ? 'bg-primary text-primary-foreground active:scale-[0.98]'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
+              )}
+              title={!cashbackEnabled ? 'Cashback indisponível no momento' : undefined}
+            >
+              <ScanLine size={18} />
+              {cashbackEnabled ? 'Escanear nota fiscal' : 'Cashback indisponível'}
+            </button>
+          </div>
+        )}
+
+        {!FEATURE_FLAGS.QR_RECEIPT_SCAN_ENABLED && (
+          <div className="mx-auto w-full max-w-5xl px-4 lg:px-8 mb-6">
+            <div className="flex items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3.5">
+              <span className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Smartphone size={18} />
+              </span>
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <Gift size={13} className="text-green-600 dark:text-green-400" />
+                  Cashback em cada pagamento online
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Pague suas reservas com PIX e ganhe cashback automaticamente para usar nas
+                  próximas vezes. Seu saldo e histórico ficam aqui na carteira.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 mx-auto w-full max-w-5xl px-4 lg:px-8">
           <div className="flex items-center justify-between mb-3">
@@ -152,7 +175,7 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
               <p className="text-xs text-muted-foreground/70">
                 {purposeTab
                   ? `Nenhuma transação com destino em ${purposeTab === 'COURT' ? 'Quadra' : 'Bar'}.`
-                  : 'Escaneie uma nota fiscal para ganhar seu primeiro cashback!'}
+                  : 'Pague uma reserva online com PIX para ganhar seu primeiro cashback!'}
               </p>
             </div>
           )}
@@ -195,7 +218,7 @@ export const CashbackView: React.FC<CashbackViewProps> = ({
       />
 
       <QrScannerModal
-        open={scannerOpen}
+        open={scannerOpen && FEATURE_FLAGS.QR_RECEIPT_SCAN_ENABLED}
         onClose={() => setScannerOpen(false)}
         barEnabled={barEnabled}
         cashbackEnabled={cashbackEnabled}

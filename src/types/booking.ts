@@ -40,8 +40,10 @@ export interface Booking {
   cancelledAt?: string;
   /** Expiry for online (payOnline) bookings awaiting payment — null otherwise */
   pendingExpiresAt?: string;
-  /** Mercado Pago order ID — set when payment is initiated */
+  /** Gateway order ID (MP legado / txid Inter) — set when payment is initiated */
   mpOrderId?: string;
+  /** txid da cobrança PIX no Banco Inter */
+  interTxid?: string;
 }
 
 export interface AvailableSlot {

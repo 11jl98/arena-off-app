@@ -63,7 +63,7 @@ function formatSpecialHoursDetail(promo: { startTime?: string; endTime?: string;
   return parts.join(' · ');
 }
 
-export const Step3Checkout: React.FC = () => {
+export const Step3Checkout: React.FC<{ onViewHistory: () => void }> = ({ onViewHistory }) => {
   const {
     selectedCourt,
     selectedDate,
@@ -72,7 +72,7 @@ export const Step3Checkout: React.FC = () => {
     setSport,
     cashbackAmount,
     setCashbackAmount,
-    setPaymentMethod,
+    reset,
     setCreatedBooking,
     setSelectedSlots,
     setStep,
@@ -80,7 +80,7 @@ export const Step3Checkout: React.FC = () => {
   } = useBookingFlow();
 
   const currentUser = useUserStore((s) => s.user);
-  const { error: showError } = useNotify();
+  const { success: showSuccess, error: showError } = useNotify();
   const queryClient = useQueryClient();
   const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null);
   const [showPromoList, setShowPromoList] = useState(false);
@@ -128,8 +128,8 @@ export const Step3Checkout: React.FC = () => {
   });
 
   const { data: myBookings = [] } = useQuery({
-    queryKey: ['my-bookings'],
-    queryFn: () => BookingsService.listMyBookings({ pageSize: 50 }),
+    queryKey: ['my-bookings', currentUser?.id],
+    queryFn: () => BookingsService.listMyBookings({ clientId: currentUser!.id }),
     enabled: !!currentUser,
     staleTime: 60 * 1000,
   });
@@ -173,10 +173,17 @@ export const Step3Checkout: React.FC = () => {
         payOnline: online,
       });
     },
-    onSuccess: (booking) => {
+    onSuccess: (booking, online) => {
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
-      setCreatedBooking(booking);
+      queryClient.invalidateQueries({ queryKey: ['slots', selectedCourt?.id, dateStr] });
+      if (online) {
+        setCreatedBooking(booking);
+      } else {
+        reset();
+        showSuccess('Reserva registrada para pagamento presencial.');
+        onViewHistory();
+      }
     },
     onError: (err: Error) => {
       const status = (err as unknown as { status?: number }).status;
@@ -495,7 +502,7 @@ export const Step3Checkout: React.FC = () => {
         onClose={() => setShowProfileModal(false)}
         onSuccess={() => {
           setShowProfileModal(false);
-          setPaymentMethod('PRESENCIAL');
+          confirmBooking(false);
         }}
       />
     </div>

@@ -81,25 +81,26 @@ export const BookingCard: React.FC<BookingCardProps> = ({
 
       {pendingExpired && (
         <div className="mt-3 pt-3 border-t border-border">
-          <p className="text-xs text-muted-foreground">Pagamento expirado — reserva cancelada.</p>
+          <p className="text-xs text-muted-foreground">Prazo de pagamento encerrado. Aguardando a atualização da reserva.</p>
         </div>
       )}
 
       {showActions && (
-        <div
-          className="mt-3 pt-3 border-t border-border flex gap-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {onContinuePayment && (
-            <button
-              onClick={() => onContinuePayment(booking)}
-              className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold active:scale-[0.98] transition-transform"
-            >
-              Concluir pagamento
-            </button>
-          )}
-          {onCancel &&
-            (confirmCancel ? (
+        <div className="mt-3 pt-3 border-t border-border" onClick={(e) => e.stopPropagation()}>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Se você já pagou, aguarde a confirmação. O status é atualizado automaticamente.
+          </p>
+          <div className="flex gap-2">
+            {onContinuePayment && (
+              <button
+                onClick={() => onContinuePayment(booking)}
+                className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold active:scale-[0.98] transition-transform"
+              >
+                Ver pagamento
+              </button>
+            )}
+            {onCancel &&
+              (confirmCancel ? (
               <div className="flex-1 flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-2">
                 <AlertTriangle size={13} className="text-red-600 dark:text-red-400 shrink-0" />
                 <button
@@ -118,14 +119,15 @@ export const BookingCard: React.FC<BookingCardProps> = ({
                   Cancelar
                 </button>
               </div>
-            ) : (
+              ) : (
               <button
                 onClick={() => setConfirmCancel(true)}
                 className="flex-1 py-2 rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-medium active:scale-[0.98] transition-transform"
               >
                 Cancelar reserva
               </button>
-            ))}
+              ))}
+          </div>
         </div>
       )}
     </div>

@@ -9,6 +9,7 @@ import type {
 } from '@/types/booking';
 
 export interface ListBookingsParams {
+  clientId?: string;
   page?: number;
   pageSize?: number;
   status?: string;
@@ -30,6 +31,10 @@ export const BookingsService = {
 
   async listMyBookings(params?: ListBookingsParams): Promise<Booking[]> {
     const queryParams: Record<string, string> = {};
+    if (params?.clientId) {
+      queryParams.clientId = params.clientId;
+      queryParams.includePending = 'true';
+    }
     if (params?.page) queryParams.page = String(params.page);
     if (params?.pageSize) queryParams.pageSize = String(params.pageSize);
     if (params?.status) queryParams.status = params.status;

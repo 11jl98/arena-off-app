@@ -1,15 +1,13 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import {
-  ShoppingBag,
-  Gift,
-  Receipt,
-  CalendarDays,
-  RefreshCcw,
-  Clock,
-} from 'lucide-react';
-import type { CashbackTransaction, CashbackTransactionType, CashbackPurpose } from '@/types/cashback';
+import { ShoppingBag, Gift, Receipt, CalendarDays, RefreshCcw, Clock } from 'lucide-react';
+import type {
+  CashbackTransaction,
+  CashbackTransactionType,
+  CashbackPurpose,
+} from '@/types/cashback';
 import { cn } from '@/lib/utils';
+import { getCashbackTransactionLabel } from './transaction-label';
 
 const TYPE_CONFIG: Record<
   CashbackTransactionType,
@@ -39,41 +37,39 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
   const config = TYPE_CONFIG[transaction.type];
   const earned = transaction.amount > 0;
   const description = transaction.notes || transaction.description;
-  const Icon = config.icon;
+  const Icon =
+    transaction.type === 'EARNED_CONSUMPTION' && transaction.bookingId ? CalendarDays : config.icon;
+  const label = getCashbackTransactionLabel(transaction, config.label);
 
   return (
     <div className="flex items-center gap-3 py-3">
       <div
         className={cn(
           'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-          earned
-            ? 'bg-green-100 dark:bg-green-900/30'
-            : 'bg-red-100 dark:bg-red-900/30'
+          earned ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
         )}
       >
         <Icon
           size={15}
           className={
-            earned
-              ? 'text-green-600 dark:text-green-400'
-              : 'text-red-500 dark:text-red-400'
+            earned ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
           }
         />
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-foreground truncate">{config.label}</p>
+          <p className="text-sm font-medium text-foreground truncate">{label}</p>
           {transaction.purpose && (
             <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground shrink-0">
               {PURPOSE_LABEL[transaction.purpose]}
             </span>
           )}
         </div>
-        {description && (
-          <p className="text-xs text-muted-foreground truncate">{description}</p>
+        {description && <p className="text-xs text-muted-foreground truncate">{description}</p>}
+        {!!transaction.outstanding && (
+          <p className="text-xs">A compensar: {fmt(transaction.outstanding)}</p>
         )}
-        {!!transaction.outstanding && <p className="text-xs">A compensar: {fmt(transaction.outstanding)}</p>}
         <p className="text-xs text-muted-foreground">
           {format(new Date(transaction.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
         </p>
@@ -82,9 +78,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({ transaction })
       <span
         className={cn(
           'text-sm font-bold shrink-0',
-          earned
-            ? 'text-green-600 dark:text-green-400'
-            : 'text-red-500 dark:text-red-400'
+          earned ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
         )}
       >
         {earned ? '+' : '-'}

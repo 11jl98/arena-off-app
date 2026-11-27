@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { format, parseISO, addHours, isBefore } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -46,6 +46,7 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
     queryFn: () => BookingsService.getBooking(bookingId!),
     enabled: !!bookingId,
     staleTime: 0,
+    refetchInterval: (query) => isPendingOnlinePayment(query.state.data) ? 5000 : false,
   });
 
   const { mutate: cancelBooking, isPending: cancelling } = useMutation({
@@ -89,46 +90,6 @@ export const BookingDetailSheet: React.FC<BookingDetailSheetProps> = ({
   const { formatted: countdown, expired: countdownExpired } = usePaymentCountdown(
     booking?.pendingExpiresAt
   );
-
-  const { mutate: expireOnTimeout } = useMutation({
-    mutationFn: () => BookingsService.cancelBooking(bookingId!),
-    onSuccess: () => {
-      showSuccess('Tempo esgotado. A reserva foi cancelada e o horário liberado.');
-      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
-    },
-    onError: () => {},
-  });
-
-  const expiryHandledRef = useRef(false);
-
-  useEffect(() => {
-    expiryHandledRef.current = false;
-  }, [bookingId]);
-
-  useEffect(() => {
-    if (!open || !booking || !countdownExpired) return;
-    if (!isPendingUnpaid || expiryHandledRef.current) return;
-    expiryHandledRef.current = true;
-
-    const handleExpiry = async () => {
-      try {
-        const fresh = await queryClient.fetchQuery({
-          queryKey: ['booking', booking.id],
-          queryFn: () => BookingsService.getBooking(booking.id),
-          staleTime: 0,
-        });
-        if (fresh.status !== 'PENDING') return;
-        if (!fresh.mpOrderId) {
-          expireOnTimeout();
-        }
-      } catch {
-        expiryHandledRef.current = false;
-      }
-    };
-
-    handleExpiry();
-  }, [open, booking, countdownExpired, isPendingUnpaid, queryClient, expireOnTimeout]);
 
   return (
     <ResponsiveModal open={open} onClose={onClose} title="Detalhes da Reserva">

@@ -1,5 +1,14 @@
 import type { Booking } from '@/types/booking';
 
+type OnlineMarkers = Pick<
+  Booking,
+  'paymentStatus' | 'pendingExpiresAt' | 'mpOrderId' | 'interTxid'
+>;
+
+function hasOnlineMarker(booking: OnlineMarkers | null | undefined): boolean {
+  return !!booking && (!!booking.mpOrderId || !!booking.interTxid);
+}
+
 /**
  * Booking criado com pagamento online (payOnline) aguardando confirmação do
  * pagamento automático. O backend não serializa `paymentMethod`, então o sinal
@@ -16,22 +25,21 @@ export function isPendingOnlinePayment(
 }
 
 /**
- * Booking pago online (Mercado Pago). O backend mantém pendingExpiresAt e
- * mpOrderId mesmo após a confirmação, então a presença deles + paymentStatus
- * PAID indica pagamento automático concluído.
+ * Booking pago online (Banco Inter / MP legado). O backend mantém pendingExpiresAt
+ * e mpOrderId/interTxid mesmo após a confirmação.
  */
 export function isPaidOnlinePayment(
-  booking: Pick<Booking, 'paymentStatus' | 'pendingExpiresAt' | 'mpOrderId'> | null | undefined
+  booking: OnlineMarkers | null | undefined
 ): boolean {
   return (
     !!booking &&
     booking.paymentStatus === 'PAID' &&
-    (!!booking.pendingExpiresAt || !!booking.mpOrderId)
+    (!!booking.pendingExpiresAt || hasOnlineMarker(booking))
   );
 }
 
 /**
- * Booking com pagamento automático (Mercado Pago) — pendente ou pago.
+ * Booking com pagamento automático online — pendente ou pago.
  */
 export function isOnlinePayment(
   booking: Booking | null | undefined
@@ -41,15 +49,19 @@ export function isOnlinePayment(
     (isPendingOnlinePayment(booking) ||
       isPaidOnlinePayment(booking) ||
       !!booking.pendingExpiresAt ||
-      !!booking.mpOrderId)
+      hasOnlineMarker(booking))
   );
 }
 
 export function getBookingPaymentLabel(
-  booking: Pick<Booking, 'paymentStatus' | 'pendingExpiresAt' | 'mpOrderId'> | null | undefined
+  booking: OnlineMarkers | null | undefined
 ): string {
-  if (isPaidOnlinePayment(booking) || !!booking?.pendingExpiresAt || !!booking?.mpOrderId) {
-    return 'Mercado Pago';
+  if (
+    isPaidOnlinePayment(booking) ||
+    !!booking?.pendingExpiresAt ||
+    hasOnlineMarker(booking)
+  ) {
+    return 'PIX Online';
   }
   return 'Presencial';
 }

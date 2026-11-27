@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CheckCircle2,
   CalendarDays,
@@ -13,6 +13,9 @@ import {
   XCircle,
   Loader2,
   AlertTriangle,
+  Gift,
+  Building2,
+  Wine,
 } from 'lucide-react';
 import { useBookingFlow } from '@/hooks/useBookingFlow';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
@@ -20,18 +23,17 @@ import { usePaymentStatus } from '@/pages/Reservas/hooks/usePaymentStatus';
 import { usePaymentCountdown } from '@/pages/Reservas/hooks/usePaymentCountdown';
 import { PaymentMethodSelector } from '@/pages/Reservas/components/PaymentMethodSelector';
 import { PixPaymentPanel } from '@/pages/Reservas/components/PixPaymentPanel';
-import { CardPaymentForm } from '@/pages/Reservas/components/CardPaymentForm';
 import { PaymentsService } from '@/services/payments';
+import { CashbackService } from '@/services/cashback';
 import { BookingsService } from '@/services/bookings';
-import { useUserStore } from '@/store/userStore';
 import { useNotify } from '@/hooks/useNotify';
 import { isOnlinePayment, getBookingPaymentLabel } from '@/utils/helpers/booking.helper';
 import { getPaymentErrorMessage } from '@/utils/helpers/payment.helper';
 import { FEATURE_FLAGS, ONLINE_PAYMENTS_AVAILABLE } from '@/config/featureFlags';
 import { cn } from '@/lib/utils';
-import type { InitiatePaymentResponse, OnlinePaymentMethod } from '@/types/payment';
+import type { CashbackPurposeOption, InitiatePaymentResponse, OnlinePaymentMethod } from '@/types/payment';
 
-type Phase = 'select' | 'pix' | 'card' | 'processing' | 'success' | 'expired';
+type Phase = 'select' | 'pix' | 'processing' | 'success' | 'expired';
 
 const fmt = (reais: number) =>
   reais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -55,15 +57,22 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
   const { createdBooking, reset, paymentData, setPaymentData, updateCreatedBooking, setStep } =
     useBookingFlow();
   const queryClient = useQueryClient();
-  const currentUser = useUserStore((s) => s.user);
   const { success: showSuccess, error: showError } = useNotify();
   const { isSupported, requestPermissionAndSubscribe } = usePushSubscription();
+
+  const { data: cashbackConfig } = useQuery({
+    queryKey: ['cashback-config'],
+    queryFn: () => CashbackService.getConfig(),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+  const barCashbackEnabled = cashbackConfig?.barCashbackEnabled ?? false;
 
   const [phase, setPhase] = useState<Phase>(() =>
     deriveInitialPhase(createdBooking?.status,
       !isOnlinePayment(createdBooking) || createdBooking?.paymentStatus === 'PAID', paymentData)
   );
-  const [cardType, setCardType] = useState<'credit' | 'debit'>('credit');
+  const [cashbackPurpose, setCashbackPurpose] = useState<CashbackPurposeOption>('COURT');
   const initiatingRef = useRef(false);
   const [initiating, setInitiating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -78,55 +87,15 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
 
   const bookingId = createdBooking?.id;
   const isOnline = isOnlinePayment(createdBooking);
-  const isPolling = isOnline && phase !== 'success' && phase !== 'expired';
+  const isPolling =
+    isOnline &&
+    !!paymentData?.interTxid &&
+    phase !== 'success' &&
+    phase !== 'expired';
   const { data: polledBooking } = usePaymentStatus(isPolling ? bookingId : null, isPolling);
 
   const expiresAt = createdBooking?.pendingExpiresAt ?? paymentData?.pendingExpiresAt;
   const { formatted: countdown, expired: countdownExpired } = usePaymentCountdown(expiresAt);
-
-  const expiryHandledRef = useRef(false);
-  useEffect(() => {
-    expiryHandledRef.current = false;
-  }, [bookingId, expiresAt]);
-
-  useEffect(() => {
-    if (!isOnline || !expiresAt || !countdownExpired || !bookingId) return;
-    if (phase === 'success' || phase === 'expired') return;
-    if (expiryHandledRef.current) return;
-    expiryHandledRef.current = true;
-
-    const handleExpiry = async () => {
-      try {
-        const fresh = await BookingsService.getBooking(bookingId);
-        if (fresh.status === 'CONFIRMED' && fresh.paymentStatus === 'PAID') {
-          queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-          queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
-          queryClient.invalidateQueries({ queryKey: ['slots'] });
-          updateCreatedBooking(fresh);
-          setPaymentData(null);
-          setPhase('success');
-          return;
-        }
-        if (paymentData || fresh.status === 'CONFIRMED') {
-          return;
-        }
-        if (fresh.status !== 'CANCELLED') {
-          await BookingsService.cancelBooking(bookingId);
-        }
-        showSuccess('Tempo esgotado. A reserva foi cancelada e o horário liberado.');
-        queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-        queryClient.invalidateQueries({ queryKey: ['slots'] });
-        queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
-        queryClient.invalidateQueries({ queryKey: ['booking-poll', bookingId] });
-        setPaymentData(null);
-        setPhase('expired');
-      } catch {
-        expiryHandledRef.current = false;
-      }
-    };
-
-    handleExpiry();
-  }, [isOnline, expiresAt, countdownExpired, bookingId, phase, paymentData, queryClient, showSuccess, setPaymentData, updateCreatedBooking]);
 
   useEffect(() => {
     if (!polledBooking) return;
@@ -137,11 +106,13 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
       updateCreatedBooking(polledBooking);
       setPaymentData(null);
       setPhase('success');
-    } else if (polledBooking.status === 'CANCELLED') {
+    } else if (polledBooking.status === 'CANCELLED' && phase !== 'expired') {
+      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['slots'] });
       setPaymentData(null);
       setPhase('expired');
     }
-  }, [polledBooking, queryClient, updateCreatedBooking, setPaymentData]);
+  }, [polledBooking, phase, queryClient, updateCreatedBooking, setPaymentData]);
 
   const handleSelectMethod = async (m: OnlinePaymentMethod) => {
     if (!createdBooking || initiatingRef.current) return;
@@ -149,9 +120,8 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
     if ((m === 'CREDIT_CARD' || m === 'DEBIT_CARD') && !FEATURE_FLAGS.ONLINE_PAYMENT_CARD_ENABLED) {
       return;
     }
-    if (m === 'CREDIT_CARD' || m === 'DEBIT_CARD') {
-      setCardType(m === 'DEBIT_CARD' ? 'debit' : 'credit');
-      setPhase('card');
+    if (m !== 'PIX') {
+      showError('No momento apenas pagamento via PIX está disponível.');
       return;
     }
     initiatingRef.current = true;
@@ -160,6 +130,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
       const data = await PaymentsService.initiatePayment({
         bookingId: createdBooking.id,
         method: 'PIX',
+        cashbackPurpose: barCashbackEnabled ? cashbackPurpose : undefined,
       });
       setPaymentData(data);
       setPhase('pix');
@@ -178,26 +149,6 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
       setInitiating(false);
     }
   };
-
-  const handleCardApproved = useCallback(
-    (data: InitiatePaymentResponse) => {
-      setPaymentData(data);
-      queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['cashback-wallet'] });
-      queryClient.invalidateQueries({ queryKey: ['slots'] });
-      if (bookingId) queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
-      setPhase('success');
-    },
-    [bookingId, queryClient, setPaymentData]
-  );
-
-  const handleCardInProcess = useCallback(
-    (data: InitiatePaymentResponse) => {
-      setPaymentData(data);
-      setPhase('processing');
-    },
-    [setPaymentData]
-  );
 
   const handleCancel = async () => {
     if (!createdBooking || cancelling) return;
@@ -232,7 +183,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
             {countdownExpired ? (
               <>
                 <Loader2 size={15} className="animate-spin text-primary" />
-                <span className="text-muted-foreground">Pagamento enviado — confirmando...</span>
+                <span className="text-muted-foreground">Consultando o status da reserva...</span>
               </>
             ) : (
               <>
@@ -257,7 +208,7 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
         </div>
       )}
 
-      {phase === 'select' && ONLINE_PAYMENTS_AVAILABLE && (
+      {phase === 'select' && !countdownExpired && ONLINE_PAYMENTS_AVAILABLE && (
         <div className="w-full max-w-md bg-card border border-border rounded-2xl p-5">
           {initiating ? (
             <div className="h-64 flex flex-col items-center justify-center gap-3">
@@ -265,7 +216,46 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
               <p className="text-sm text-muted-foreground">Gerando pagamento...</p>
             </div>
           ) : (
-            <PaymentMethodSelector amount={createdBooking.finalAmount} onSelect={handleSelectMethod} />
+            <div className="flex flex-col gap-4">
+              {barCashbackEnabled && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <Gift size={14} className="text-primary" />
+                    Onde receber seu cashback?
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setCashbackPurpose('COURT')}
+                      className={cn(
+                        'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm transition-all active:scale-[0.98]',
+                        cashbackPurpose === 'COURT'
+                          ? 'border-primary bg-primary/10 text-primary font-semibold'
+                          : 'border-border text-muted-foreground'
+                      )}
+                    >
+                      <Building2 size={18} />
+                      Quadra
+                    </button>
+                    <button
+                      onClick={() => setCashbackPurpose('BAR')}
+                      className={cn(
+                        'flex flex-col items-center gap-1.5 p-3 rounded-xl border text-sm transition-all active:scale-[0.98]',
+                        cashbackPurpose === 'BAR'
+                          ? 'border-primary bg-primary/10 text-primary font-semibold'
+                          : 'border-border text-muted-foreground'
+                      )}
+                    >
+                      <Wine size={18} />
+                      Bar
+                    </button>
+                  </div>
+                </div>
+              )}
+              <PaymentMethodSelector
+                amount={createdBooking.finalAmount}
+                onSelect={handleSelectMethod}
+              />
+            </div>
           )}
         </div>
       )}
@@ -284,26 +274,6 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
       {phase === 'pix' && paymentData && (
         <div className="w-full max-w-md">
           <PixPaymentPanel paymentData={paymentData} expiresAt={expiresAt} />
-        </div>
-      )}
-
-      {phase === 'card' && (
-        <div className="w-full max-w-md flex flex-col gap-3">
-          <CardPaymentForm
-            bookingId={createdBooking.id}
-            amount={createdBooking.finalAmount}
-            cardType={cardType}
-            payerEmail={currentUser?.email}
-            payerCpf={currentUser?.cpf}
-            onApproved={handleCardApproved}
-            onInProcess={handleCardInProcess}
-          />
-          <button
-            onClick={() => setPhase('select')}
-            className="w-full border border-border text-foreground font-medium py-2.5 rounded-xl text-sm active:scale-[0.98] transition-transform"
-          >
-            Trocar forma de pagamento
-          </button>
         </div>
       )}
 
@@ -330,6 +300,20 @@ export const Step4Payment: React.FC<{ onViewHistory?: () => void }> = ({ onViewH
                 ? 'Pagamento confirmado. Seu horário está garantido.'
                 : 'Sua quadra está confirmada. Apareça no horário combinado e boa partida!'}
             </p>
+            {isOnline && paymentData?.estimatedCashback ? (
+              <div className="flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-50 dark:bg-green-900/20 px-3.5 py-2.5 text-green-700 dark:text-green-300 text-sm">
+                <Gift size={16} className="shrink-0" />
+                <span>
+                  <strong>+{fmt(paymentData.estimatedCashback)}</strong> de cashback
+                  creditado para futuras reservas!
+                </span>
+              </div>
+            ) : isOnline ? (
+              <div className="flex items-center gap-2 rounded-xl border border-green-500/30 bg-green-50 dark:bg-green-900/20 px-3.5 py-2.5 text-green-700 dark:text-green-300 text-sm">
+                <Gift size={16} className="shrink-0" />
+                <span>Pagamento online gera cashback para suas próximas reservas.</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="w-full max-w-md bg-card border border-border rounded-2xl p-5 flex flex-col gap-3">

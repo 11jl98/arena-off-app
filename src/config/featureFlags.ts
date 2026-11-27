@@ -2,24 +2,28 @@
  * Feature Flags
  *
  * Controla a ativação/desativação de funcionalidades em rollout gradual.
- * Os pagamentos online serão liberados em breve, por partes.
  *
- * Para liberar o PIX, altere ONLINE_PAYMENT_PIX_ENABLED para `true`.
- * Para liberar o Cartão (crédito/débito), altere ONLINE_PAYMENT_CARD_ENABLED para `true`.
+ * ONLINE_PAYMENT_PIX_ENABLED  — PIX via Banco Inter (único método online)
+ * ONLINE_PAYMENT_CARD_ENABLED — cartão (desativado: gateway é só PIX)
+ * QR_RECEIPT_SCAN_ENABLED     — "Ler QRCode de notinha" (desativado por enquanto;
+ *                               a carteira com histórico continua disponível)
  */
 export const FEATURE_FLAGS = {
   /**
-   * Pagamento online via PIX — botão PIX no seletor de forma de pagamento.
-   * Altere para `true` para liberar.
+   * Pagamento online via PIX (Banco Inter) — gera cashback para futuras alocações.
    */
-  ONLINE_PAYMENT_PIX_ENABLED: false,
+  ONLINE_PAYMENT_PIX_ENABLED: true,
 
   /**
-   * Pagamento online com Cartão (crédito e débito) — botões de cartão no
-   * seletor de forma de pagamento.
-   * Altere para `true` para liberar.
+   * Pagamento online com Cartão — desativado (apenas PIX).
    */
   ONLINE_PAYMENT_CARD_ENABLED: false,
+
+  /**
+   * Scanner de QR Code de notinha fiscal (cashback por nota).
+   * Desligado: a página cashback mantém apenas carteira + histórico.
+   */
+  QR_RECEIPT_SCAN_ENABLED: false,
 } as const;
 
 /**
